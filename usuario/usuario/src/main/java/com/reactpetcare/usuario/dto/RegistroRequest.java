@@ -1,0 +1,25 @@
+package com.reactpetcare.usuario.dto;
+
+import com.reactpetcare.usuario.model.RolUsuario;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+@Data
+@Schema(description = "Petición de registro de usuario")
+public class RegistroRequest {
+
+    @Schema(description = "Nombre del usuario", example = "Francisca Castro")
+    private String nombre;
+
+    @Schema(description = "Correo electrónico del usuario", example = "francisca@example.com")
+    private String email;
+
+    @Schema(description = "Teléfono", example = "+56912345678")
+    private String telefono;
+
+    @Schema(description = "Contraseña del usuario", example = "Password123")
+    private String password;
+
+    @Schema(description = "Rol del usuario", example = "CLIENTE")
+    private RolUsuario rol;
+}
