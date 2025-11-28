@@ -28,4 +28,7 @@ public class ProductoDto {
 
     @Schema(description = "Estado del producto", example = "DISPONIBLE")
     private EstadoProducto estado;
+
+    @Schema(description = "URL de la imagen del producto", example = "https://example.com/image.jpg")
+    private String imagen;
 }

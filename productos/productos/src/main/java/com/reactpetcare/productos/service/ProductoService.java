@@ -31,6 +31,7 @@ public class ProductoService {
                 .categoria(categoria)
                 .stock(dto.getStock())
                 .estado(dto.getStock() > 0 ? EstadoProducto.DISPONIBLE : EstadoProducto.SIN_STOCK)
+                .imagen(dto.getImagen())
                 .build();
 
         producto = productoRepo.save(producto);
@@ -69,6 +70,7 @@ public class ProductoService {
         producto.setDescripcion(dto.getDescripcion());
         producto.setCategoria(categoria);
         producto.setStock(dto.getStock());
+        producto.setImagen(dto.getImagen());
 
         // Actualizar estado
         producto.setEstado(dto.getStock() > 0 ? EstadoProducto.DISPONIBLE : EstadoProducto.SIN_STOCK);

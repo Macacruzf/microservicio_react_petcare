@@ -100,7 +100,11 @@ public class CarritoService {
     /** Vaciar carrito del usuario */
     public void vaciarCarrito(Long usuarioId) {
         Carrito carrito = carritoRepository.findByUsuarioId(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Carrito no existe"));
+                .orElseGet(() -> carritoRepository.save(
+                        Carrito.builder()
+                                .usuarioId(usuarioId)
+                                .build()
+                ));
 
         carrito.getItems().clear();
         carritoRepository.save(carrito);

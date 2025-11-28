@@ -22,10 +22,24 @@ public class Usuario {
 
     @Column(nullable = false)
     @Schema(
-        description = "Nombre completo del usuario",
-        example = "Francisca Castro"
+        description = "Nombre del usuario",
+        example = "Francisca"
     )
     private String nombre;
+
+    @Column(nullable = false)
+    @Schema(
+        description = "Apellido del usuario",
+        example = "Castro"
+    )
+    private String apellido;
+
+    @Column(nullable = false)
+    @Schema(
+        description = "Dirección del usuario",
+        example = "Av. Principal 123"
+    )
+    private String direccion;
 
     @Column(nullable = false, unique = true)
     @Schema(

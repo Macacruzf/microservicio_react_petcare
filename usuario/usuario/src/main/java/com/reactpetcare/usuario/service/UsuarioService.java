@@ -39,10 +39,12 @@ public class UsuarioService {
 
         Usuario usuario = Usuario.builder()
                 .nombre(dto.getNombre())
+                .apellido(dto.getApellido())
                 .email(dto.getEmail())
+                .direccion(dto.getDireccion())
                 .telefono(dto.getTelefono())
                 .password(passwordEncoder.encode("123456")) // contraseña por defecto
-                .rol(dto.getRol() != null ? dto.getRol() : RolUsuario.CLIENTE)
+                .rol(dto.getRol() != null && !dto.getRol().isEmpty() ? RolUsuario.valueOf(dto.getRol()) : RolUsuario.CLIENTE)
                 .build();
 
         usuarioRepositorio.save(usuario);
@@ -61,10 +63,12 @@ public class UsuarioService {
 
         Usuario usuario = Usuario.builder()
                 .nombre(req.getNombre())
+                .apellido(req.getApellido())
                 .email(req.getEmail())
+                .direccion(req.getDireccion())
                 .telefono(req.getTelefono())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .rol(req.getRol() != null ? req.getRol() : RolUsuario.CLIENTE)
+                .rol(req.getRol() != null && !req.getRol().isEmpty() ? RolUsuario.valueOf(req.getRol()) : RolUsuario.CLIENTE)
                 .build();
 
         usuarioRepositorio.save(usuario);
@@ -73,7 +77,7 @@ public class UsuarioService {
     }
 
     // ---------------------------------------------------------
-    //  LOGIN
+    //  LOGIN (sin JWT, solo validación)
     // ---------------------------------------------------------
     public LoginResponse login(LoginRequest req) {
 
@@ -84,14 +88,12 @@ public class UsuarioService {
         Usuario usuario = usuarioRepositorio.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        String token = jwtUtil.generarToken(usuario.getEmail());
-
         return new LoginResponse(
-                token,
                 usuario.getId(),
                 usuario.getNombre(),
+                usuario.getApellido(),
                 usuario.getEmail(),
-                usuario.getRol()
+                usuario.getRol().name()
         );
     }
 
@@ -124,8 +126,12 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+        usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
-        usuario.setRol(dto.getRol());
+        if (dto.getRol() != null) {
+            usuario.setRol(RolUsuario.valueOf(dto.getRol()));
+        }
 
         usuarioRepositorio.save(usuario);
 
@@ -139,9 +145,11 @@ public class UsuarioService {
         UsuarioDto dto = new UsuarioDto();
         dto.setId(usuario.getId());
         dto.setNombre(usuario.getNombre());
+        dto.setApellido(usuario.getApellido());
         dto.setEmail(usuario.getEmail());
+        dto.setDireccion(usuario.getDireccion());
         dto.setTelefono(usuario.getTelefono());
-        dto.setRol(usuario.getRol());
+        dto.setRol(usuario.getRol().name());
         return dto;
     }
 }

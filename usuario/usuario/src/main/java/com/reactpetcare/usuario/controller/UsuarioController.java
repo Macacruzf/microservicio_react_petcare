@@ -64,41 +64,37 @@ public class UsuarioController {
     // ---------------------------------------------------------
     @Operation(
             summary = "Obtener usuario por ID",
-            description = "Devuelve datos del usuario. Requiere un token válido."
+            description = "Devuelve datos del usuario."
     )
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioDto> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
     // ---------------------------------------------------------
-    // LISTAR TODOS (ADMIN)
+    // LISTAR TODOS
     // ---------------------------------------------------------
     @Operation(
             summary = "Listar todos los usuarios",
-            description = "Solo ADMIN puede ver la lista completa.",
+            description = "Devuelve la lista completa de usuarios.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "OK",
-                            content = @Content(mediaType = "application/json")),
-                    @ApiResponse(responseCode = "403", description = "No autorizado")
+                            content = @Content(mediaType = "application/json"))
             }
     )
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioDto>> listar() {
         return ResponseEntity.ok(usuarioService.listar());
     }
 
     // ---------------------------------------------------------
-    // ACTUALIZAR USUARIO (ADMIN)
+    // ACTUALIZAR USUARIO
     // ---------------------------------------------------------
     @Operation(
             summary = "Actualizar usuario",
-            description = "Solo ADMIN puede editar datos del usuario."
+            description = "Edita datos del usuario."
     )
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioDto> actualizar(
             @PathVariable Long id,
             @RequestBody UsuarioDto request

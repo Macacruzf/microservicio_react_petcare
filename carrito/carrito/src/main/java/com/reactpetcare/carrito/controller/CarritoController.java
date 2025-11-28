@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/carrito")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RequiredArgsConstructor
 @Tag(name = "Carrito", description = "Microservicio que gestiona el carrito de compras del usuario")
 public class CarritoController {

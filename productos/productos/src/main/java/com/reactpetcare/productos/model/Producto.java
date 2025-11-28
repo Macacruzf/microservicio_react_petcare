@@ -43,4 +43,8 @@ public class Producto {
             example = "DISPONIBLE"
     )
     private EstadoProducto estado;
+
+    @Column(length = 500)
+    @Schema(description = "URL de la imagen del producto", example = "https://example.com/image.jpg")
+    private String imagen;
 }

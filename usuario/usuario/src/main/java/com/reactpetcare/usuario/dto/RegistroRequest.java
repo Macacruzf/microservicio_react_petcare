@@ -8,11 +8,17 @@ import lombok.Data;
 @Schema(description = "Petición de registro de usuario")
 public class RegistroRequest {
 
-    @Schema(description = "Nombre del usuario", example = "Francisca Castro")
+    @Schema(description = "Nombre del usuario", example = "Francisca")
     private String nombre;
+
+    @Schema(description = "Apellido del usuario", example = "Castro")
+    private String apellido;
 
     @Schema(description = "Correo electrónico del usuario", example = "francisca@example.com")
     private String email;
+
+    @Schema(description = "Dirección del usuario", example = "Av. Principal 123")
+    private String direccion;
 
     @Schema(description = "Teléfono", example = "+56912345678")
     private String telefono;
@@ -21,5 +27,5 @@ public class RegistroRequest {
     private String password;
 
     @Schema(description = "Rol del usuario", example = "CLIENTE")
-    private RolUsuario rol;
+    private String rol;
 }

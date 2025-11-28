@@ -16,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/productos")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RequiredArgsConstructor
 @Tag(name = "Productos", description = "Microservicio para gestión de productos y categorías")
 public class ProductoController {
