@@ -1,11 +1,15 @@
 package com.reactpetcare.pedidos.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@AllArgsConstructor        // constructor con usuarioId + items
+@NoArgsConstructor 
 @Schema(description = "Datos para crear un pedido")
 public class PedidoRequest {
 

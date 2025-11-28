@@ -1,9 +1,13 @@
 package com.reactpetcare.carrito.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor        // constructor con usuarioId + items
+@NoArgsConstructor 
 @Schema(description = "Respuesta del microservicio de productos usada por el carrito")
 public class ProductoResponse {
 

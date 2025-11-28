@@ -1,6 +1,5 @@
 package com.reactpetcare.usuario.dto;
 
-import com.reactpetcare.usuario.model.RolUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;

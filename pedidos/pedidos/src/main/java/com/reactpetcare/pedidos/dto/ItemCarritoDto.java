@@ -1,9 +1,13 @@
 package com.reactpetcare.pedidos.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor        // constructor con usuarioId + items
+@NoArgsConstructor 
 @Schema(description = "Item dentro del carrito del usuario")
 public class ItemCarritoDto {
 
