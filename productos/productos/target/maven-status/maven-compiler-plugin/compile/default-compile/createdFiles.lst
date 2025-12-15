@@ -1,0 +1,14 @@
+com\reactpetcare\productos\controller\ProductoController.class
+com\reactpetcare\productos\dto\ProductoDto.class
+com\reactpetcare\productos\config\CorsConfig.class
+com\reactpetcare\productos\config\DataLoader.class
+com\reactpetcare\productos\repository\CategoriaRepository.class
+com\reactpetcare\productos\model\Categoria$CategoriaBuilder.class
+com\reactpetcare\productos\ProductosApplication.class
+com\reactpetcare\productos\model\Producto.class
+com\reactpetcare\productos\model\Categoria.class
+com\reactpetcare\productos\config\OpenApiConfig.class
+com\reactpetcare\productos\service\ProductoService.class
+com\reactpetcare\productos\model\EstadoProducto.class
+com\reactpetcare\productos\model\Producto$ProductoBuilder.class
+com\reactpetcare\productos\repository\ProductoRepository.class

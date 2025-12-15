@@ -101,4 +101,20 @@ public class UsuarioController {
     ) {
         return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
+
+    // ---------------------------------------------------------
+    // CAMBIAR CONTRASEÑA
+    // ---------------------------------------------------------
+    @Operation(
+            summary = "Cambiar contraseña de usuario",
+            description = "Permite al usuario cambiar su contraseña validando la contraseña actual."
+    )
+    @PutMapping("/{id}/cambiar-password")
+    public ResponseEntity<Void> cambiarPassword(
+            @PathVariable Long id,
+            @RequestBody CambiarPasswordRequest request
+    ) {
+        usuarioService.cambiarPassword(id, request);
+        return ResponseEntity.ok().build();
+    }
 }

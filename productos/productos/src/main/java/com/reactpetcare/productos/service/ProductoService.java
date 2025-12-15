@@ -97,24 +97,34 @@ public class ProductoService {
     @Transactional
     public void descontarStock(Long id, int cantidad) {
 
+        System.out.println("🔻 Recibida solicitud de descuento de stock - Producto ID: " + id + " | Cantidad: " + cantidad);
+        
         Producto producto = obtenerPorId(id);
+        
+        System.out.println("📦 Producto: " + producto.getNombre() + " | Stock actual: " + producto.getStock());
 
         if (producto.getStock() <= 0) {
+            System.err.println("❌ Error: Producto sin stock disponible");
             throw new RuntimeException("Producto sin stock disponible");
         }
 
         if (producto.getStock() < cantidad) {
+            System.err.println("❌ Error: Stock insuficiente. Disponible: " + producto.getStock() + ", Solicitado: " + cantidad);
             throw new RuntimeException("Stock insuficiente para completar la compra");
         }
 
         // Descontar el stock
+        int stockAnterior = producto.getStock();
         producto.setStock(producto.getStock() - cantidad);
+        int stockNuevo = producto.getStock();
 
         // Cambiar el estado si queda en 0
         if (producto.getStock() == 0) {
             producto.setEstado(EstadoProducto.SIN_STOCK);
+            System.out.println("⚠️ Producto quedó sin stock, cambiando estado a SIN_STOCK");
         }
 
         productoRepo.save(producto);
+        System.out.println("✅ Stock descontado exitosamente: " + stockAnterior + " → " + stockNuevo);
     }
 }

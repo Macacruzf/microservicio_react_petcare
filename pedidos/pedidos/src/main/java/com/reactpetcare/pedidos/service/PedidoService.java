@@ -41,6 +41,7 @@ public class PedidoService {
 
         try {
             // 1. Validar existencia del usuario
+            System.out.println("📌 Obteniendo datos del usuario: " + usuarioId);
             usuario = usuarioWebClient.get()
                     .uri("/usuarios/{id}", usuarioId)
                     .retrieve()
@@ -50,19 +51,25 @@ public class PedidoService {
             if (usuario == null) {
                 throw new RuntimeException("El usuario no existe");
             }
+            System.out.println("✅ Usuario encontrado: " + usuario.getNombre());
 
             // 2. Obtener carrito del usuario
+            System.out.println("📌 Obteniendo carrito del usuario: " + usuarioId);
             carrito = carritoWebClient.get()
                     .uri("/carrito/{usuarioId}", usuarioId)
                     .retrieve()
                     .bodyToMono(CarritoDto.class)
                     .block();
+            
+            if (carrito != null && carrito.getItems() != null) {
+                System.out.println("✅ Carrito obtenido con " + carrito.getItems().size() + " items");
+            }
         } catch (WebClientResponseException e) {
-            System.err.println("Error al comunicar con microservicios: " + e.getResponseBodyAsString());
+            System.err.println("❌ Error al comunicar con microservicios: " + e.getResponseBodyAsString());
             throw new RuntimeException("Error al obtener datos de usuario o carrito: " + e.getStatusCode());
         }
 
-        if (carrito == null || carrito.getItems().isEmpty()) {
+        if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
             throw new RuntimeException("El carrito está vacío");
         }
 
@@ -116,6 +123,7 @@ public class PedidoService {
         ProductoResponse producto;
         try {
             // Obtener datos del producto desde productos-service
+            System.out.println("📦 Procesando producto ID: " + item.getProductoId() + " | Cantidad: " + item.getCantidad());
             producto = productosWebClient.get()
                     .uri("/productos/{id}", item.getProductoId())
                     .retrieve()
@@ -125,20 +133,26 @@ public class PedidoService {
             if (producto == null) {
                 throw new RuntimeException("Producto no encontrado en productos-service");
             }
+            System.out.println("✅ Producto encontrado: " + producto.getNombre() + " | Stock actual: " + producto.getStock());
 
             // Valida stock
             if (producto.getStock() < item.getCantidad()) {
-                throw new RuntimeException("Stock insuficiente de " + producto.getNombre());
+                throw new RuntimeException("Stock insuficiente de " + producto.getNombre() + 
+                    ". Disponible: " + producto.getStock() + ", Solicitado: " + item.getCantidad());
             }
 
             // Descontar stock en productos-service
+            System.out.println("🔻 Descontando " + item.getCantidad() + " unidades del producto: " + producto.getNombre());
             productosWebClient.post()
                     .uri("/productos/{id}/descontar?cantidad={cantidad}",
                             item.getProductoId(), item.getCantidad())
                     .retrieve()
                     .toBodilessEntity()
                     .block();
+            System.out.println("✅ Stock descontado exitosamente");
         } catch (WebClientResponseException e) {
+            System.err.println("❌ Error al procesar producto " + item.getProductoId() + ": " + e.getStatusCode());
+            System.err.println("❌ Detalles: " + e.getResponseBodyAsString());
             throw new RuntimeException("Error al procesar producto " + item.getProductoId() + ": " + e.getStatusCode());
         }
 
