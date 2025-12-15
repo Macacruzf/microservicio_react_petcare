@@ -6,6 +6,7 @@ import com.reactpetcare.productos.repository.*;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -93,6 +94,7 @@ public class ProductoService {
     // =====================================================
     // DESCONTAR STOCK (USADO POR PEDIDOS)
     // =====================================================
+    @Transactional
     public void descontarStock(Long id, int cantidad) {
 
         Producto producto = obtenerPorId(id);

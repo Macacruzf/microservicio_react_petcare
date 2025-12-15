@@ -3,6 +3,8 @@ package com.reactpetcare.usuario.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "usuario")
@@ -26,6 +28,13 @@ public class Usuario {
         example = "Francisca"
     )
     private String nombre;
+
+    @Column(nullable = false, unique = true)
+    @Schema(
+        description = "Nombre de usuario único para login",
+        example = "francisca.castro"
+    )
+    private String username;
 
     @Column(nullable = false)
     @Schema(
@@ -62,12 +71,10 @@ public class Usuario {
     )
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Schema(
-        description = "Rol del usuario dentro del sistema",
-        example = "CLIENTE",
-        allowableValues = {"CLIENTE", "ADMIN"}
-    )
-    private RolUsuario rol;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "usuario_roles",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id"))
+    @Schema(description = "Roles asignados al usuario")
+    private Set<Rol> roles = new HashSet<>();
 }

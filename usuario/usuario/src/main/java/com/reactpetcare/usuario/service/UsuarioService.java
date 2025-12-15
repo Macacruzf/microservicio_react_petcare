@@ -4,9 +4,10 @@ import com.reactpetcare.usuario.dto.UsuarioDto;
 import com.reactpetcare.usuario.dto.RegistroRequest;
 import com.reactpetcare.usuario.dto.LoginRequest;
 import com.reactpetcare.usuario.dto.LoginResponse;
-
-import com.reactpetcare.usuario.model.RolUsuario;
+import com.reactpetcare.usuario.model.RolNombre;
+import com.reactpetcare.usuario.model.Rol;
 import com.reactpetcare.usuario.model.Usuario;
+import com.reactpetcare.usuario.repository.RolRepository;
 import com.reactpetcare.usuario.repository.UsuarioRepository;
 import com.reactpetcare.usuario.security.JwtUtil;
 
@@ -14,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepositorio;
+    private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authManager;
     private final JwtUtil jwtUtil;
@@ -33,21 +37,31 @@ public class UsuarioService {
     // ---------------------------------------------------------
     public UsuarioDto crear(UsuarioDto dto) {
 
-        if (usuarioRepositorio.findByEmail(dto.getEmail()).isPresent()) {
-            throw new RuntimeException("El email ya está registrado");
+        if (usuarioRepositorio.findByUsername(dto.getUsername()).isPresent()) {
+            throw new RuntimeException("El usuario ya existe");
         }
+
+        // Buscamos el rol en la BD o lanzamos error
+        String rolNombre = dto.getRol() != null ? dto.getRol() : "CLIENTE";
+        Rol rol = rolRepository.findByNombre(RolNombre.valueOf(rolNombre))
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
 
         Usuario usuario = Usuario.builder()
                 .nombre(dto.getNombre())
                 .apellido(dto.getApellido())
+                .username(dto.getUsername()) // Faltaba asignar el username
                 .email(dto.getEmail())
                 .direccion(dto.getDireccion())
                 .telefono(dto.getTelefono())
                 .password(passwordEncoder.encode("123456")) // contraseña por defecto
-                .rol(dto.getRol() != null && !dto.getRol().isEmpty() ? RolUsuario.valueOf(dto.getRol()) : RolUsuario.CLIENTE)
+                .roles(Set.of(rol)) // Asignamos el Set de roles
                 .build();
 
-        usuarioRepositorio.save(usuario);
+        try {
+            usuarioRepositorio.save(usuario);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("El email ya está registrado");
+        }
 
         return mapToDto(usuario);
     }
@@ -57,21 +71,29 @@ public class UsuarioService {
     // ---------------------------------------------------------
     public UsuarioDto registrar(RegistroRequest req) {
 
-        if (usuarioRepositorio.findByEmail(req.getEmail()).isPresent()) {
-            throw new RuntimeException("El email ya está registrado");
+        if (usuarioRepositorio.findByUsername(req.getUsername()).isPresent()) {
+            throw new RuntimeException("El nombre de usuario ya está ocupado");
         }
+
+        Rol rol = rolRepository.findByNombre(RolNombre.CLIENTE)
+                .orElseThrow(() -> new RuntimeException("Error al asignar rol por defecto"));
 
         Usuario usuario = Usuario.builder()
                 .nombre(req.getNombre())
                 .apellido(req.getApellido())
+                .username(req.getUsername())
                 .email(req.getEmail())
                 .direccion(req.getDireccion())
                 .telefono(req.getTelefono())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .rol(req.getRol() != null && !req.getRol().isEmpty() ? RolUsuario.valueOf(req.getRol()) : RolUsuario.CLIENTE)
+                .roles(Set.of(rol))
                 .build();
 
-        usuarioRepositorio.save(usuario);
+        try {
+            usuarioRepositorio.save(usuario);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("El email ya está registrado");
+        }
 
         return mapToDto(usuario);
     }
@@ -81,6 +103,7 @@ public class UsuarioService {
     // ---------------------------------------------------------
     public LoginResponse login(LoginRequest req) {
 
+        // Autenticamos usando email
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
         );
@@ -88,12 +111,15 @@ public class UsuarioService {
         Usuario usuario = usuarioRepositorio.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        String token = jwtUtil.generarToken(usuario.getEmail());
+
         return new LoginResponse(
                 usuario.getId(),
                 usuario.getNombre(),
                 usuario.getApellido(),
                 usuario.getEmail(),
-                usuario.getRol().name()
+                usuario.getRoles().iterator().next().getNombre().name(), // Obtenemos el nombre del primer rol
+                token // Asegúrate de agregar este campo a tu clase LoginResponse
         );
     }
 
@@ -130,7 +156,8 @@ public class UsuarioService {
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
         if (dto.getRol() != null) {
-            usuario.setRol(RolUsuario.valueOf(dto.getRol()));
+            Rol rol = rolRepository.findByNombre(RolNombre.valueOf(dto.getRol())).orElseThrow();
+            usuario.setRoles(Set.of(rol));
         }
 
         usuarioRepositorio.save(usuario);
@@ -149,7 +176,9 @@ public class UsuarioService {
         dto.setEmail(usuario.getEmail());
         dto.setDireccion(usuario.getDireccion());
         dto.setTelefono(usuario.getTelefono());
-        dto.setRol(usuario.getRol().name());
+        dto.setUsername(usuario.getUsername());
+        // Mapeamos el primer rol encontrado a String
+        dto.setRol(usuario.getRoles().stream().findFirst().map(r -> r.getNombre().name()).orElse("CLIENTE"));
         return dto;
     }
 }

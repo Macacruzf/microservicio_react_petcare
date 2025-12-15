@@ -10,6 +10,15 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.StreamUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
@@ -21,96 +30,89 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        if (productoRepository.count() > 0) return;
+        // 1. Cargamos listas en memoria para verificar qué existe y qué no
+        List<Categoria> categoriasExistentes = categoriaRepository.findAll();
+        List<Producto> productosExistentes = productoRepository.findAll();
 
-        // Categorías automáticas
-        Categoria accesorios = categoriaRepository.save(new Categoria(null, "Accesorios"));
-        Categoria juguetes    = categoriaRepository.save(new Categoria(null, "Juguetes"));
-        Categoria alimentos   = categoriaRepository.save(new Categoria(null, "Alimentos"));
-        Categoria higiene     = categoriaRepository.save(new Categoria(null, "Higiene"));
+        // 2. Categorías (Busca si existe, si no, la crea)
+        Categoria accesorios = buscarOCrearCategoria(categoriasExistentes, "Accesorios");
+        Categoria juguetes   = buscarOCrearCategoria(categoriasExistentes, "Juguetes");
+        Categoria alimentos  = buscarOCrearCategoria(categoriasExistentes, "Alimentos");
+        Categoria higiene    = buscarOCrearCategoria(categoriasExistentes, "Higiene");
 
-        // Productos iniciales
-        productoRepository.save(Producto.builder()
-                .nombre("Arnés para perro")
-                .precio(12990.0)
-                .descripcion("Arnés cómodo y ajustable con diseño clásico.")
-                .categoria(accesorios)
-                .stock(10)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+        // 3. Productos (Crea o actualiza la imagen si ya existe)
+        guardarOActualizar(productosExistentes, "Arnés para perro", 6990.0, "Arnés cómodo y ajustable con diseño clásico.", accesorios, 10, "images/arnes.jpg");
+        guardarOActualizar(productosExistentes, "Cama acolchada para perro", 14990.0, "Cama ultrasuave con textura tipo waffle.", accesorios, 8, "images/cama.jpg");
+        guardarOActualizar(productosExistentes, "Rascador y torre para gatos", 25990.0, "Centro de juegos con varias plataformas.", juguetes, 6, "images/rascador.jpg");
+        guardarOActualizar(productosExistentes, "Collar tropical para perro", 4990.0, "Collar resistente con estampado tropical.", accesorios, 10, "images/collar.jpg");
+        guardarOActualizar(productosExistentes, "Alimento para gato Pro Plan", 18990.0, "Nutrición completa con prebióticos naturales.", alimentos, 10, "images/alimento_gato.jpg");
+        guardarOActualizar(productosExistentes, "Correa retráctil automática", 3990.0, "Correa extensible hasta 3 metros.", accesorios, 12, "images/correa.jpg");
+        guardarOActualizar(productosExistentes, "Juguetes dentales para perro (pack x4)", 7990.0, "Pack de juguetes de goma con texturas.", juguetes, 14, "images/juguetes.jpg");
+        guardarOActualizar(productosExistentes, "Plato doble elevado para mascota", 8990.0, "Plato doble de cerámica con base de madera.", accesorios, 9, "images/plato.jpg");
+        guardarOActualizar(productosExistentes, "Shampoo para perros con ceramidas", 6490.0, "Shampoo hipoalergénico para brillo y suavidad.", higiene, 10, "images/shampo.jpg");
 
-        productoRepository.save(Producto.builder()
-                .nombre("Cama acolchada para perro")
-                .precio(34990.0)
-                .descripcion("Cama ultrasuave con textura tipo waffle.")
-                .categoria(accesorios)
-                .stock(8)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+        System.out.println(">>> Productos verificados y actualizados correctamente ✔️");
+    }
 
-        productoRepository.save(Producto.builder()
-                .nombre("Rascador y torre para gatos")
-                .precio(65990.0)
-                .descripcion("Centro de juegos con varias plataformas.")
-                .categoria(juguetes)
-                .stock(6)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+    private Categoria buscarOCrearCategoria(List<Categoria> existentes, String nombre) {
+        return existentes.stream()
+                .filter(c -> c.getNombre().equalsIgnoreCase(nombre))
+                .findFirst()
+                .orElseGet(() -> categoriaRepository.save(new Categoria(null, nombre)));
+    }
 
-        productoRepository.save(Producto.builder()
-                .nombre("Collar tropical para perro")
-                .precio(8990.0)
-                .descripcion("Collar resistente con estampado tropical.")
-                .categoria(accesorios)
-                .stock(10)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+    private void guardarOActualizar(List<Producto> existentes, String nombre, Double precio, String descripcion, Categoria categoria, Integer stock, String imagePath) {
+        String imagenBase64 = cargarImagen(imagePath);
+        
+        Optional<Producto> existente = existentes.stream()
+                .filter(p -> p.getNombre().equals(nombre))
+                .findFirst();
 
-        productoRepository.save(Producto.builder()
-                .nombre("Alimento para gato Pro Plan")
-                .precio(28990.0)
-                .descripcion("Nutrición completa con prebióticos naturales.")
-                .categoria(alimentos)
-                .stock(10)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+        if (existente.isPresent()) {
+            Producto p = existente.get();
+            // Si encontramos la imagen en la carpeta, actualizamos el producto existente
+            if (imagenBase64 != null) {
+                p.setImagen(imagenBase64);
+                productoRepository.save(p);
+            }
+        } else {
+            productoRepository.save(Producto.builder()
+                    .nombre(nombre)
+                    .precio(precio)
+                    .descripcion(descripcion)
+                    .categoria(categoria)
+                    .stock(stock)
+                    .estado(EstadoProducto.DISPONIBLE)
+                    .imagen(imagenBase64)
+                    .build());
+        }
+    }
 
-        productoRepository.save(Producto.builder()
-                .nombre("Correa retráctil automática")
-                .precio(10990.0)
-                .descripcion("Correa extensible hasta 3 metros.")
-                .categoria(accesorios)
-                .stock(12)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+    private String cargarImagen(String path) {
+        try {
+            byte[] bytes = null;
 
-        productoRepository.save(Producto.builder()
-                .nombre("Juguetes dentales para perro (pack x4)")
-                .precio(9990.0)
-                .descripcion("Pack de juguetes de goma con texturas.")
-                .categoria(juguetes)
-                .stock(14)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
+            // 1. Intentar cargar desde el classpath (compilado)
+            ClassPathResource imgFile = new ClassPathResource(path);
+            if (imgFile.exists()) {
+                bytes = StreamUtils.copyToByteArray(imgFile.getInputStream());
+            } else {
+                // 2. Fallback: Intentar cargar desde la carpeta src (desarrollo local sin rebuild)
+                File file = new File("src/main/resources/" + path);
+                if (file.exists()) {
+                    bytes = Files.readAllBytes(file.toPath());
+                }
+            }
 
-        productoRepository.save(Producto.builder()
-                .nombre("Plato doble elevado para mascota")
-                .precio(14990.0)
-                .descripcion("Plato doble de cerámica con base de madera.")
-                .categoria(accesorios)
-                .stock(9)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
-
-        productoRepository.save(Producto.builder()
-                .nombre("Shampoo para perros con ceramidas")
-                .precio(8490.0)
-                .descripcion("Shampoo hipoalergénico para brillo y suavidad.")
-                .categoria(higiene)
-                .stock(10)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build());
-
-        System.out.println("Productos iniciales cargados correctamente ✔️");
+            if (bytes == null) {
+                System.out.println(">>> ADVERTENCIA: No se encontró la imagen: " + path);
+                return null;
+            }
+            String extension = path.endsWith(".png") ? "png" : "jpeg";
+            return "data:image/" + extension + ";base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

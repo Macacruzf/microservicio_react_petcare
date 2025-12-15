@@ -1,6 +1,5 @@
 package com.reactpetcare.usuario.dto;
 
-import com.reactpetcare.usuario.model.RolUsuario;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -13,6 +12,9 @@ public class RegistroRequest {
 
     @Schema(description = "Apellido del usuario", example = "Castro")
     private String apellido;
+
+    @Schema(description = "Nombre de usuario", example = "francisca.castro")
+    private String username;
 
     @Schema(description = "Correo electrónico del usuario", example = "francisca@example.com")
     private String email;

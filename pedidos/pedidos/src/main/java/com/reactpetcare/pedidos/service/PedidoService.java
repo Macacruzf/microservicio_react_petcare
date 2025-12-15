@@ -10,7 +10,9 @@ import com.reactpetcare.pedidos.repository.DetallePedidoRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,25 +33,34 @@ public class PedidoService {
     /**
      * Crear un pedido desde el carrito del usuario
      */
+    @Transactional
     public Pedido crearPedido(Long usuarioId) {
 
-        // 1. Validar existencia del usuario
-        UsuarioResponse usuario = usuarioWebClient.get()
-                .uri("/usuarios/{id}", usuarioId)
-                .retrieve()
-                .bodyToMono(UsuarioResponse.class)
-                .block();
+        UsuarioResponse usuario;
+        CarritoDto carrito;
 
-        if (usuario == null) {
-            throw new RuntimeException("El usuario no existe");
+        try {
+            // 1. Validar existencia del usuario
+            usuario = usuarioWebClient.get()
+                    .uri("/usuarios/{id}", usuarioId)
+                    .retrieve()
+                    .bodyToMono(UsuarioResponse.class)
+                    .block();
+
+            if (usuario == null) {
+                throw new RuntimeException("El usuario no existe");
+            }
+
+            // 2. Obtener carrito del usuario
+            carrito = carritoWebClient.get()
+                    .uri("/carrito/{usuarioId}", usuarioId)
+                    .retrieve()
+                    .bodyToMono(CarritoDto.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            System.err.println("Error al comunicar con microservicios: " + e.getResponseBodyAsString());
+            throw new RuntimeException("Error al obtener datos de usuario o carrito: " + e.getStatusCode());
         }
-
-        // 2. Obtener carrito del usuario
-        CarritoDto carrito = carritoWebClient.get()
-                .uri("/carrito/{usuarioId}", usuarioId)
-                .retrieve()
-                .bodyToMono(CarritoDto.class)
-                .block();
 
         if (carrito == null || carrito.getItems().isEmpty()) {
             throw new RuntimeException("El carrito está vacío");
@@ -102,29 +113,34 @@ public class PedidoService {
      */
     private DetallePedido procesarItemCarrito(ItemCarritoDto item, Pedido pedido) {
 
-        // Obtener datos del producto desde productos-service
-        ProductoResponse producto = productosWebClient.get()
-                .uri("/productos/{id}", item.getProductoId())
-                .retrieve()
-                .bodyToMono(ProductoResponse.class)
-                .block();
+        ProductoResponse producto;
+        try {
+            // Obtener datos del producto desde productos-service
+            producto = productosWebClient.get()
+                    .uri("/productos/{id}", item.getProductoId())
+                    .retrieve()
+                    .bodyToMono(ProductoResponse.class)
+                    .block();
 
-        if (producto == null) {
-            throw new RuntimeException("Producto no encontrado en productos-service");
+            if (producto == null) {
+                throw new RuntimeException("Producto no encontrado en productos-service");
+            }
+
+            // Valida stock
+            if (producto.getStock() < item.getCantidad()) {
+                throw new RuntimeException("Stock insuficiente de " + producto.getNombre());
+            }
+
+            // Descontar stock en productos-service
+            productosWebClient.post()
+                    .uri("/productos/{id}/descontar?cantidad={cantidad}",
+                            item.getProductoId(), item.getCantidad())
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new RuntimeException("Error al procesar producto " + item.getProductoId() + ": " + e.getStatusCode());
         }
-
-        // Valida stock
-        if (producto.getStock() < item.getCantidad()) {
-            throw new RuntimeException("Stock insuficiente de " + producto.getNombre());
-        }
-
-        // Descontar stock en productos-service
-        productosWebClient.post()
-                .uri("/productos/{id}/descontar?cantidad={cantidad}",
-                        item.getProductoId(), item.getCantidad())
-                .retrieve()
-                .toBodilessEntity()
-                .block();
 
         // Crear detalle del pedido
         double subtotal = producto.getPrecio() * item.getCantidad();

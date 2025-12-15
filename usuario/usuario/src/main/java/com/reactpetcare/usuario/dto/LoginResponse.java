@@ -23,4 +23,7 @@ public class LoginResponse {
 
     @Schema(description = "Rol del usuario", example = "CLIENTE")
     private String rol;
+
+    @Schema(description = "Token JWT de acceso", example = "eyJhbGciOiJIUzI1NiJ9...")
+    private String token;
 }

@@ -1,6 +1,6 @@
 package com.reactpetcare.usuario.dto;
 
-import com.reactpetcare.usuario.model.RolUsuario;
+import com.reactpetcare.usuario.model.RolNombre;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -25,6 +25,9 @@ public class UsuarioDto {
 
     @Schema(description = "Número telefónico", example = "+56912345678")
     private String telefono;
+
+    @Schema(description = "Nombre de usuario", example = "francisca.castro")
+    private String username;
 
     @Schema(description = "Contraseña (solo para registro)", example = "password123")
     private String password;

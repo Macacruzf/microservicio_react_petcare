@@ -7,7 +7,7 @@ import lombok.Data;
 @Schema(description = "Petición de inicio de sesión")
 public class LoginRequest {
 
-    @Schema(description = "Correo del usuario", example = "francisca@example.com")
+    @Schema(description = "Correo electrónico", example = "francisca@example.com")
     private String email;
 
     @Schema(description = "Contraseña", example = "Password123")

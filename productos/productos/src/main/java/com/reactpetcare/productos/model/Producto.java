@@ -44,7 +44,8 @@ public class Producto {
     )
     private EstadoProducto estado;
 
-    @Column(length = 500)
-    @Schema(description = "URL de la imagen del producto", example = "https://example.com/image.jpg")
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    @Schema(description = "Imagen en formato Base64", example = "data:image/png;base64,iVBORw0KGgo...")
     private String imagen;
 }

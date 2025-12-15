@@ -61,7 +61,7 @@ public class ProductoController {
 
     // ────────────────────────────────────────────────────────────────
     @Operation(summary = "Descontar stock — usado por Pedidos")
-    @PostMapping("/descontar/{id}")
+    @PostMapping("/{id}/descontar")
     public ResponseEntity<Void> descontarStock(
             @PathVariable Long id,
             @RequestParam int cantidad
