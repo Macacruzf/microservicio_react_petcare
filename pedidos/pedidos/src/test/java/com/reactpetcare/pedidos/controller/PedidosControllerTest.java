@@ -4,111 +4,137 @@ import com.reactpetcare.pedidos.model.EstadoPedido;
 import com.reactpetcare.pedidos.model.Pedido;
 import com.reactpetcare.pedidos.service.PedidoService;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mockito;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(PedidoController.class)
 class PedidoControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private PedidoService pedidoService;
 
-    @InjectMocks
-    private PedidoController pedidoController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private Pedido pedido;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        pedido = new Pedido();
-        pedido.setId(1L);
-        pedido.setUsuarioId(5L);
-        pedido.setEstado(EstadoPedido.PENDIENTE);
-    }
-
-    // ---------------------------------------------------------
+    // =====================================================
     // CREAR PEDIDO
-    // ---------------------------------------------------------
+    // =====================================================
     @Test
-    void crearPedido_debeCrearPedidoCorrectamente() {
-        when(pedidoService.crearPedido(5L)).thenReturn(pedido);
+    void crearPedido_ok() throws Exception {
 
-        ResponseEntity<Pedido> response = pedidoController.crearPedido(5L);
+        Pedido pedido = Pedido.builder()
+                .id(1L)
+                .usuarioId(1L)
+                .nombreUsuario("Francisca Castro")
+                .emailUsuario("francisca@example.com")
+                .fechaCreacion(LocalDateTime.now())
+                .estado(EstadoPedido.PENDIENTE)
+                .total(25990.0)
+                .build();
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(1L, response.getBody().getId());
-        assertEquals(EstadoPedido.PENDIENTE, response.getBody().getEstado());
-        verify(pedidoService).crearPedido(5L);
+        Mockito.when(pedidoService.crearPedido(1L))
+                .thenReturn(pedido);
+
+        mockMvc.perform(post("/pedidos/crear/{usuarioId}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
     }
 
-    // ---------------------------------------------------------
-    // OBTENER PEDIDO POR ID
-    // ---------------------------------------------------------
+    // =====================================================
+    // OBTENER POR ID
+    // =====================================================
     @Test
-    void obtenerPorId_debeRetornarPedido() {
-        when(pedidoService.obtenerPorId(1L)).thenReturn(pedido);
+    void obtenerPorId_ok() throws Exception {
 
-        ResponseEntity<Pedido> response = pedidoController.obtenerPorId(1L);
+        Pedido pedido = Pedido.builder()
+                .id(10L)
+                .estado(EstadoPedido.PENDIENTE)
+                .build();
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(1L, response.getBody().getId());
-        verify(pedidoService).obtenerPorId(1L);
+        Mockito.when(pedidoService.obtenerPorId(10L))
+                .thenReturn(pedido);
+
+        mockMvc.perform(get("/pedidos/{id}", 10L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10L));
     }
 
-    // ---------------------------------------------------------
+    // =====================================================
     // LISTAR TODOS
-    // ---------------------------------------------------------
+    // =====================================================
     @Test
-    void listar_debeRetornarListaDePedidos() {
-        when(pedidoService.listar()).thenReturn(List.of(pedido));
+    void listar_ok() throws Exception {
 
-        ResponseEntity<List<Pedido>> response = pedidoController.listar();
+        List<Pedido> pedidos = List.of(
+                Pedido.builder().id(1L).build(),
+                Pedido.builder().id(2L).build()
+        );
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().size());
-        verify(pedidoService).listar();
+        Mockito.when(pedidoService.listar())
+                .thenReturn(pedidos);
+
+        mockMvc.perform(get("/pedidos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
-    // ---------------------------------------------------------
+    // =====================================================
     // LISTAR POR USUARIO
-    // ---------------------------------------------------------
+    // =====================================================
     @Test
-    void listarPorUsuario_debeRetornarPedidosDelUsuario() {
-        when(pedidoService.listarPorUsuario(5L)).thenReturn(List.of(pedido));
+    void listarPorUsuario_ok() throws Exception {
 
-        ResponseEntity<List<Pedido>> response = pedidoController.listarPorUsuario(5L);
+        List<Pedido> pedidos = List.of(
+                Pedido.builder().id(1L).usuarioId(1L).build()
+        );
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().size());
-        verify(pedidoService).listarPorUsuario(5L);
+        Mockito.when(pedidoService.listarPorUsuario(1L))
+                .thenReturn(pedidos);
+
+        mockMvc.perform(get("/pedidos/usuario/{usuarioId}", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].usuarioId").value(1L));
     }
 
-    // ---------------------------------------------------------
+    // =====================================================
     // CAMBIAR ESTADO
-    // ---------------------------------------------------------
+    // =====================================================
     @Test
-    void cambiarEstado_debeActualizarEstadoDelPedido() {
-        Pedido actualizado = new Pedido();
-        actualizado.setId(1L);
-        actualizado.setEstado(EstadoPedido.ENTREGADO);
+    void cambiarEstado_ok() throws Exception {
 
-        when(pedidoService.cambiarEstado(1L, EstadoPedido.ENTREGADO))
-                .thenReturn(actualizado);
+        Pedido pedido = Pedido.builder()
+                .id(10L)
+                .estado(EstadoPedido.ENTREGADO)
+                .build();
 
-        ResponseEntity<Pedido> response =
-                pedidoController.cambiarEstado(1L, EstadoPedido.ENTREGADO);
+        Mockito.when(pedidoService.cambiarEstado(10L, EstadoPedido.ENTREGADO))
+                .thenReturn(pedido);
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(EstadoPedido.ENTREGADO, response.getBody().getEstado());
-        verify(pedidoService).cambiarEstado(1L, EstadoPedido.ENTREGADO);
+        mockMvc.perform(
+                put("/pedidos/{id}/estado", 10L)
+                        .param("estado", "ENTREGADO")
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ENTREGADO"));
     }
 }

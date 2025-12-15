@@ -1,140 +1,148 @@
 package com.reactpetcare.usuario.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reactpetcare.usuario.dto.*;
 import com.reactpetcare.usuario.service.UsuarioService;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.http.ResponseEntity;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(UsuarioController.class)
 class UsuarioControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private UsuarioService usuarioService;
 
-    @InjectMocks
-    private UsuarioController usuarioController;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    @Autowired
+    private ObjectMapper objectMapper;
 
     // ---------------------------------------------------------
-    // TEST: REGISTRO
+    // REGISTRO → 201
     // ---------------------------------------------------------
     @Test
-    void registrar_debeCrearUsuario() {
+    void registrarUsuario_ok_201() throws Exception {
         RegistroRequest request = new RegistroRequest();
-        request.setEmail("correo@test.com");
-        request.setPassword("1234");
+        request.setNombre("Francisca");
 
-        UsuarioDto dto = new UsuarioDto();
-        dto.setId(1L);
-        dto.setEmail("correo@test.com");
+        UsuarioDto response = new UsuarioDto();
+        response.setId(1L);
+        response.setNombre("Francisca");
 
-        when(usuarioService.registrar(request)).thenReturn(dto);
+        Mockito.when(usuarioService.registrar(Mockito.any()))
+                .thenReturn(response);
 
-        ResponseEntity<UsuarioDto> response = usuarioController.registrar(request);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(dto, response.getBody());
-        verify(usuarioService).registrar(request);
+        mockMvc.perform(post("/usuarios/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     // ---------------------------------------------------------
-    // TEST: LOGIN (usando tu LoginResponse real sin token)
+    // LOGIN → 200
     // ---------------------------------------------------------
     @Test
-    void login_debeRetornarDatosUsuario() {
+    void login_ok_200() throws Exception {
         LoginRequest request = new LoginRequest();
-        request.setEmail("correo@test.com");
-        request.setPassword("1234");
+        request.setEmail("francisca@example.com");
+        request.setPassword("password");
 
-        LoginResponse loginResponse = new LoginResponse(
+        LoginResponse response = new LoginResponse(
                 1L,
                 "Francisca",
-                "González",
+                "Castro",
                 "francisca@example.com",
-                "CLIENTE"
+                "CLIENTE",
+                "jwt-token"
         );
 
-        when(usuarioService.login(request)).thenReturn(loginResponse);
+        Mockito.when(usuarioService.login(Mockito.any()))
+                .thenReturn(response);
 
-        ResponseEntity<LoginResponse> response = usuarioController.login(request);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1L, response.getBody().getUserId());
-        assertEquals("Francisca", response.getBody().getNombre());
-        assertEquals("González", response.getBody().getApellido());
-        assertEquals("francisca@example.com", response.getBody().getEmail());
-        assertEquals("CLIENTE", response.getBody().getRol());
-
-        verify(usuarioService).login(request);
+        mockMvc.perform(post("/usuarios/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
     }
 
     // ---------------------------------------------------------
-    // TEST: OBTENER POR ID
+    // OBTENER POR ID → 200
     // ---------------------------------------------------------
     @Test
-    void obtenerPorId_debeRetornarUsuario() {
+    void obtenerUsuarioPorId_ok_200() throws Exception {
         UsuarioDto dto = new UsuarioDto();
         dto.setId(1L);
         dto.setNombre("Francisca");
 
-        when(usuarioService.obtenerPorId(1L)).thenReturn(dto);
+        Mockito.when(usuarioService.obtenerPorId(1L))
+                .thenReturn(dto);
 
-        ResponseEntity<UsuarioDto> response = usuarioController.obtenerPorId(1L);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Francisca", response.getBody().getNombre());
-        assertEquals(1L, response.getBody().getId());
-        verify(usuarioService).obtenerPorId(1L);
+        mockMvc.perform(get("/usuarios/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     // ---------------------------------------------------------
-    // TEST: LISTAR TODOS
+    // LISTAR → 200
     // ---------------------------------------------------------
     @Test
-    void listar_debeRetornarListaUsuarios() {
+    void listarUsuarios_ok_200() throws Exception {
         UsuarioDto dto = new UsuarioDto();
         dto.setId(1L);
 
-        List<UsuarioDto> lista = List.of(dto);
+        Mockito.when(usuarioService.listar())
+                .thenReturn(List.of(dto));
 
-        when(usuarioService.listar()).thenReturn(lista);
-
-        ResponseEntity<List<UsuarioDto>> response = usuarioController.listar();
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        verify(usuarioService).listar();
+        mockMvc.perform(get("/usuarios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1));
     }
 
     // ---------------------------------------------------------
-    // TEST: ACTUALIZAR USUARIO
+    // LISTAR → 204
     // ---------------------------------------------------------
     @Test
-    void actualizar_debeActualizarUsuario() {
+    void listarUsuarios_noContent_204() throws Exception {
+        Mockito.when(usuarioService.listar())
+                .thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/usuarios"))
+                .andExpect(status().isNoContent());
+    }
+
+    // ---------------------------------------------------------
+    // ACTUALIZAR → 200
+    // ---------------------------------------------------------
+    @Test
+    void actualizarUsuario_ok_200() throws Exception {
         UsuarioDto request = new UsuarioDto();
-        request.setNombre("Nuevo Nombre");
+        request.setNombre("Nuevo nombre");
 
-        UsuarioDto actualizado = new UsuarioDto();
-        actualizado.setId(1L);
-        actualizado.setNombre("Nuevo Nombre");
+        UsuarioDto response = new UsuarioDto();
+        response.setId(1L);
+        response.setNombre("Nuevo nombre");
 
-        when(usuarioService.actualizar(1L, request)).thenReturn(actualizado);
+        Mockito.when(usuarioService.actualizar(Mockito.eq(1L), Mockito.any()))
+                .thenReturn(response);
 
-        ResponseEntity<UsuarioDto> response = usuarioController.actualizar(1L, request);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Nuevo Nombre", response.getBody().getNombre());
-        verify(usuarioService).actualizar(1L, request);
+        mockMvc.perform(put("/usuarios/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Nuevo nombre"));
     }
 }

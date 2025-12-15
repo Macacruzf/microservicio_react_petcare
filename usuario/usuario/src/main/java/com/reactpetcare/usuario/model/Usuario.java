@@ -9,7 +9,9 @@ import java.util.Set;
 @Entity
 @Table(name = "usuario")
 @Data
-@NoArgsConstructor @AllArgsConstructor @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Schema(description = "Entidad que representa a un usuario del sistema")
 public class Usuario {
 
@@ -25,35 +27,40 @@ public class Usuario {
     @Column(nullable = false)
     @Schema(
         description = "Nombre del usuario",
-        example = "Francisca"
+        example = "Francisca",
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String nombre;
 
     @Column(nullable = false, unique = true)
     @Schema(
         description = "Nombre de usuario único para login",
-        example = "francisca.castro"
+        example = "francisca.castro",
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String username;
 
     @Column(nullable = false)
     @Schema(
         description = "Apellido del usuario",
-        example = "Castro"
+        example = "Castro",
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String apellido;
 
     @Column(nullable = false)
     @Schema(
         description = "Dirección del usuario",
-        example = "Av. Principal 123"
+        example = "Av. Principal 123",
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String direccion;
 
     @Column(nullable = false, unique = true)
     @Schema(
         description = "Correo electrónico único del usuario",
-        example = "francisca@example.com"
+        example = "francisca@example.com",
+        requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String email;
 
@@ -65,16 +72,18 @@ public class Usuario {
 
     @Column(nullable = false)
     @Schema(
-        description = "Contraseña encriptada del usuario. SOLO escritura.",
-        example = "MiPassword123",
+        description = "Contraseña del usuario (solo para creación o actualización)",
+        example = "********",
         accessMode = Schema.AccessMode.WRITE_ONLY
     )
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "usuario_roles",
-            joinColumns = @JoinColumn(name = "usuario_id"),
-            inverseJoinColumns = @JoinColumn(name = "rol_id"))
+    @JoinTable(
+        name = "usuario_roles",
+        joinColumns = @JoinColumn(name = "usuario_id"),
+        inverseJoinColumns = @JoinColumn(name = "rol_id")
+    )
     @Schema(description = "Roles asignados al usuario")
     private Set<Rol> roles = new HashSet<>();
 }

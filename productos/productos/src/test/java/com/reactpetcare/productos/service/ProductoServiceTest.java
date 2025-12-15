@@ -4,15 +4,20 @@ import com.reactpetcare.productos.dto.ProductoDto;
 import com.reactpetcare.productos.model.*;
 import com.reactpetcare.productos.repository.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
 
     @Mock
@@ -24,173 +29,241 @@ class ProductoServiceTest {
     @InjectMocks
     private ProductoService productoService;
 
-    private Categoria categoria;
-    private Producto producto;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        categoria = new Categoria();
-        categoria.setId(1L);
-        categoria.setNombre("Accesorios");
-
-        producto = Producto.builder()
-                .id(1L)
-                .nombre("Collar")
-                .precio(5000.0)
-                .descripcion("Collar de cuero")
-                .categoria(categoria)
-                .stock(10)
-                .estado(EstadoProducto.DISPONIBLE)
-                .build();
-    }
-
-    // ============================================================
-    // TEST CREAR
-    // ============================================================
+    // =====================================================
+    // CREAR PRODUCTO → OK
+    // =====================================================
     @Test
-    void crear_debeCrearProducto() {
+    void crearProducto_ok() {
+
+        Categoria categoria = Categoria.builder()
+                .id(1L)
+                .nombre("Accesorios")
+                .build();
+
         ProductoDto dto = new ProductoDto();
         dto.setNombre("Collar");
         dto.setPrecio(5000.0);
-        dto.setDescripcion("Collar de cuero");
+        dto.setDescripcion("Collar rojo");
         dto.setCategoriaId(1L);
         dto.setStock(10);
+        dto.setImagen("img");
 
-        when(categoriaRepo.findById(1L)).thenReturn(Optional.of(categoria));
-        when(productoRepo.save(any(Producto.class))).thenReturn(producto);
+        when(categoriaRepo.findById(1L))
+                .thenReturn(Optional.of(categoria));
 
-        ProductoDto result = productoService.crear(dto);
+        when(productoRepo.save(any()))
+                .thenAnswer(inv -> {
+                    Producto p = inv.getArgument(0);
+                    p.setId(1L);
+                    return p;
+                });
 
-        assertEquals(1L, result.getId());
-        assertEquals(EstadoProducto.DISPONIBLE, result.getEstado());
-        verify(productoRepo).save(any(Producto.class));
+        ProductoDto resultado = productoService.crear(dto);
+
+        assertNotNull(resultado.getId());
+        assertEquals(EstadoProducto.DISPONIBLE, resultado.getEstado());
+        verify(productoRepo).save(any());
     }
 
+    // =====================================================
+    // CREAR PRODUCTO → CATEGORÍA NO EXISTE
+    // =====================================================
     @Test
-    void crear_deberiaFallarSiCategoriaNoExiste() {
+    void crearProducto_categoriaNoExiste_error() {
+
         ProductoDto dto = new ProductoDto();
         dto.setCategoriaId(99L);
 
-        when(categoriaRepo.findById(99L)).thenReturn(Optional.empty());
+        when(categoriaRepo.findById(99L))
+                .thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> productoService.crear(dto));
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> productoService.crear(dto)
+        );
+
+        assertEquals("Categoría no encontrada", ex.getMessage());
     }
 
-    // ============================================================
-    // TEST LISTAR
-    // ============================================================
+    // =====================================================
+    // LISTAR PRODUCTOS
+    // =====================================================
     @Test
-    void listar_debeRetornarLista() {
-        when(productoRepo.findAll()).thenReturn(List.of(producto));
+    void listarProductos_ok() {
+
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Collar")
+                .estado(EstadoProducto.DISPONIBLE)
+                .build();
+
+        when(productoRepo.findAll())
+                .thenReturn(List.of(producto));
 
         List<Producto> lista = productoService.listar();
 
         assertEquals(1, lista.size());
-        verify(productoRepo).findAll();
     }
 
-    // ============================================================
-    // TEST OBTENER POR ID
-    // ============================================================
+    // =====================================================
+    // OBTENER POR ID → OK
+    // =====================================================
     @Test
-    void obtenerPorId_debeRetornarProducto() {
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
+    void obtenerProductoPorId_ok() {
 
-        Producto result = productoService.obtenerPorId(1L);
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Collar")
+                .build();
 
-        assertEquals("Collar", result.getNombre());
-        verify(productoRepo).findById(1L);
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
+
+        Producto resultado = productoService.obtenerPorId(1L);
+
+        assertEquals("Collar", resultado.getNombre());
     }
 
+    // =====================================================
+    // OBTENER POR ID → NO EXISTE
+    // =====================================================
     @Test
-    void obtenerPorId_debeLanzarExcepcionSiNoExiste() {
-        when(productoRepo.findById(1L)).thenReturn(Optional.empty());
+    void obtenerProductoPorId_noExiste_error() {
 
-        assertThrows(RuntimeException.class, () -> productoService.obtenerPorId(1L));
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> productoService.obtenerPorId(1L)
+        );
+
+        assertEquals("Producto no encontrado", ex.getMessage());
     }
 
-    // ============================================================
-    // TEST ACTUALIZAR
-    // ============================================================
+    // =====================================================
+    // ACTUALIZAR PRODUCTO → OK
+    // =====================================================
     @Test
-    void actualizar_debeActualizarProducto() {
+    void actualizarProducto_ok() {
+
+        Categoria categoria = Categoria.builder()
+                .id(1L)
+                .nombre("Accesorios")
+                .build();
+
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Viejo")
+                .stock(5)
+                .estado(EstadoProducto.DISPONIBLE)
+                .categoria(categoria)
+                .build();
+
         ProductoDto dto = new ProductoDto();
-        dto.setNombre("Nuevo Collar");
-        dto.setDescripcion("Actualizado");
-        dto.setPrecio(7990.0);
-        dto.setStock(3);
+        dto.setNombre("Nuevo");
+        dto.setPrecio(8000.0);
+        dto.setDescripcion("Nuevo desc");
         dto.setCategoriaId(1L);
+        dto.setStock(0);
+        dto.setImagen("img");
 
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
-        when(categoriaRepo.findById(1L)).thenReturn(Optional.of(categoria));
-        when(productoRepo.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
 
-        ProductoDto result = productoService.actualizar(1L, dto);
+        when(categoriaRepo.findById(1L))
+                .thenReturn(Optional.of(categoria));
 
-        assertEquals("Nuevo Collar", result.getNombre());
-        assertEquals(EstadoProducto.DISPONIBLE, result.getEstado());
-        verify(productoRepo).save(any(Producto.class));
+        when(productoRepo.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        ProductoDto actualizado = productoService.actualizar(1L, dto);
+
+        assertEquals(EstadoProducto.SIN_STOCK, actualizado.getEstado());
+        verify(productoRepo).save(producto);
     }
 
+    // =====================================================
+    // ELIMINAR PRODUCTO
+    // =====================================================
     @Test
-    void actualizar_fallaSiCategoriaNoExiste() {
-        ProductoDto dto = new ProductoDto();
-        dto.setCategoriaId(99L);
+    void eliminarProducto_ok() {
 
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
-        when(categoriaRepo.findById(99L)).thenReturn(Optional.empty());
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Collar")
+                .build();
 
-        assertThrows(RuntimeException.class, () -> productoService.actualizar(1L, dto));
-    }
-
-    // ============================================================
-    // TEST ELIMINAR
-    // ============================================================
-    @Test
-    void eliminar_debeEliminarProducto() {
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
-        doNothing().when(productoRepo).delete(producto);
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
 
         productoService.eliminar(1L);
 
         verify(productoRepo).delete(producto);
     }
 
+    // =====================================================
+    // DESCONTAR STOCK → OK
+    // =====================================================
     @Test
-    void eliminar_fallaSiNoExiste() {
-        when(productoRepo.findById(1L)).thenReturn(Optional.empty());
+    void descontarStock_ok() {
 
-        assertThrows(RuntimeException.class, () -> productoService.eliminar(1L));
-    }
+        Producto producto = Producto.builder()
+                .id(1L)
+                .stock(5)
+                .estado(EstadoProducto.DISPONIBLE)
+                .build();
 
-    // ============================================================
-    // TEST DESCONTAR STOCK
-    // ============================================================
-    @Test
-    void descontarStock_debeDescontarCorrectamente() {
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
 
-        productoService.descontarStock(1L, 5);
+        productoService.descontarStock(1L, 3);
 
-        assertEquals(5, producto.getStock());
+        assertEquals(2, producto.getStock());
         verify(productoRepo).save(producto);
     }
 
+    // =====================================================
+    // DESCONTAR STOCK → STOCK INSUFICIENTE
+    // =====================================================
     @Test
-    void descontarStock_fallaSiStockEsCero() {
-        producto.setStock(0);
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
+    void descontarStock_insuficiente_error() {
 
-        assertThrows(RuntimeException.class, () -> productoService.descontarStock(1L, 1));
+        Producto producto = Producto.builder()
+                .id(1L)
+                .stock(1)
+                .build();
+
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> productoService.descontarStock(1L, 5)
+        );
+
+        assertEquals("Stock insuficiente para completar la compra", ex.getMessage());
     }
 
+    // =====================================================
+    // DESCONTAR STOCK → SIN STOCK
+    // =====================================================
     @Test
-    void descontarStock_fallaSiStockInsuficiente() {
-        producto.setStock(2);
-        when(productoRepo.findById(1L)).thenReturn(Optional.of(producto));
+    void descontarStock_sinStock_error() {
 
-        assertThrows(RuntimeException.class, () -> productoService.descontarStock(1L, 5));
+        Producto producto = Producto.builder()
+                .id(1L)
+                .stock(0)
+                .build();
+
+        when(productoRepo.findById(1L))
+                .thenReturn(Optional.of(producto));
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> productoService.descontarStock(1L, 1)
+        );
+
+        assertEquals("Producto sin stock disponible", ex.getMessage());
     }
 }

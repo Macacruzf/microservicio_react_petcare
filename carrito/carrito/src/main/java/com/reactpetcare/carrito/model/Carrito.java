@@ -14,19 +14,37 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Entidad que representa el carrito de compras del usuario")
+@Schema(
+    name = "Carrito",
+    description = "Representa el carrito de compras asociado a un usuario"
+)
 public class Carrito {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "ID único del carrito", example = "1")
+    @Schema(
+        description = "ID único del carrito",
+        example = "1",
+        accessMode = Schema.AccessMode.READ_ONLY
+    )
     private Long id;
 
-    @Schema(description = "ID del usuario dueño del carrito", example = "10")
+    @Schema(
+        description = "ID del usuario dueño del carrito",
+        example = "10",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private Long usuarioId;
 
-    @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore  
-    @Schema(description = "Lista interna de ítems del carrito (relación)")
+    @OneToMany(
+        mappedBy = "carrito",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    @JsonIgnore
+    @Schema(
+        description = "Lista de ítems del carrito (relación interna, no expuesta por la API)",
+        accessMode = Schema.AccessMode.READ_ONLY
+    )
     private List<CarritoItem> items = new ArrayList<>();
 }

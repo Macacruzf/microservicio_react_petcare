@@ -1,1 +1,3 @@
 com\reactpetcare\usuario\UsuarioApplicationTests.class
+com\reactpetcare\usuario\service\UsuarioServiceTest.class
+com\reactpetcare\usuario\controller\UsuarioControllerTest.class

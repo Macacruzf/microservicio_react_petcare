@@ -1,128 +1,148 @@
 package com.reactpetcare.productos.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reactpetcare.productos.dto.ProductoDto;
+import com.reactpetcare.productos.model.EstadoProducto;
 import com.reactpetcare.productos.model.Producto;
 import com.reactpetcare.productos.service.ProductoService;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(ProductoController.class)
 class ProductoControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private ProductoService productoService;
 
-    @InjectMocks
-    private ProductoController productoController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    // ---------------------------------------------------------
+    // LISTAR → 200
+    // ---------------------------------------------------------
+    @Test
+    void listarProductos_ok_200() throws Exception {
+
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Collar")
+                .precio(5000.0)
+                .stock(10)
+                .estado(EstadoProducto.DISPONIBLE)
+                .build();
+
+        when(productoService.listar()).thenReturn(List.of(producto));
+
+        mockMvc.perform(get("/productos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1));
     }
 
     // ---------------------------------------------------------
-    // LISTAR
+    // OBTENER POR ID → 200
     // ---------------------------------------------------------
     @Test
-    void listar_debeRetornarListaDeProductos() {
-        Producto p = new Producto();
-        p.setId(1L);
-        p.setNombre("Shampoo");
+    void obtenerProductoPorId_ok_200() throws Exception {
 
-        when(productoService.listar()).thenReturn(List.of(p));
+        Producto producto = Producto.builder()
+                .id(1L)
+                .nombre("Collar")
+                .precio(5000.0)
+                .stock(10)
+                .estado(EstadoProducto.DISPONIBLE)
+                .build();
 
-        ResponseEntity<List<Producto>> response = productoController.listar();
+        when(productoService.obtenerPorId(1L)).thenReturn(producto);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        assertEquals("Shampoo", response.getBody().get(0).getNombre());
-        verify(productoService).listar();
+        mockMvc.perform(get("/productos/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     // ---------------------------------------------------------
-    // OBTENER POR ID
+    // CREAR → 201 (Swagger) / 200 real
     // ---------------------------------------------------------
     @Test
-    void obtenerPorId_debeRetornarProducto() {
-        Producto p = new Producto();
-        p.setId(1L);
-        p.setNombre("Shampoo");
+    void crearProducto_ok() throws Exception {
 
-        when(productoService.obtenerPorId(1L)).thenReturn(p);
+        ProductoDto request = new ProductoDto();
+        request.setNombre("Shampoo");
+        request.setPrecio(5990.0);
+        request.setStock(15);
+        request.setEstado(EstadoProducto.DISPONIBLE);
 
-        ResponseEntity<Producto> response = productoController.obtenerPorId(1L);
+        ProductoDto response = new ProductoDto();
+        response.setId(1L);
+        response.setNombre("Shampoo");
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Shampoo", response.getBody().getNombre());
-        verify(productoService).obtenerPorId(1L);
+        when(productoService.crear(any())).thenReturn(response);
+
+        mockMvc.perform(post("/productos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     // ---------------------------------------------------------
-    // CREAR PRODUCTO
+    // ACTUALIZAR → 200
     // ---------------------------------------------------------
     @Test
-    void crear_debeCrearProducto() {
-        ProductoDto dto = new ProductoDto();
-        dto.setNombre("Collar");
-        dto.setPrecio(5000.0);
+    void actualizarProducto_ok_200() throws Exception {
 
-        when(productoService.crear(dto)).thenReturn(dto);
+        ProductoDto request = new ProductoDto();
+        request.setNombre("Nuevo nombre");
 
-        ResponseEntity<ProductoDto> response = productoController.crear(dto);
+        ProductoDto response = new ProductoDto();
+        response.setId(1L);
+        response.setNombre("Nuevo nombre");
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Collar", response.getBody().getNombre());
-        verify(productoService).crear(dto);
+        when(productoService.actualizar(eq(1L), any()))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/productos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Nuevo nombre"));
     }
 
     // ---------------------------------------------------------
-    // ACTUALIZAR PRODUCTO
+    // ELIMINAR → 204
     // ---------------------------------------------------------
     @Test
-    void actualizar_debeModificarProducto() {
-        ProductoDto dto = new ProductoDto();
-        dto.setNombre("Collar Premium");
-        dto.setPrecio(7990.0);
+    void eliminarProducto_noContent_204() throws Exception {
 
-        when(productoService.actualizar(1L, dto)).thenReturn(dto);
-
-        ResponseEntity<ProductoDto> response = productoController.actualizar(1L, dto);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Collar Premium", response.getBody().getNombre());
-        verify(productoService).actualizar(1L, dto);
-    }
-
-    // ---------------------------------------------------------
-    // ELIMINAR PRODUCTO
-    // ---------------------------------------------------------
-    @Test
-    void eliminar_debeEliminarProducto() {
         doNothing().when(productoService).eliminar(1L);
 
-        ResponseEntity<Void> response = productoController.eliminar(1L);
-
-        assertEquals(204, response.getStatusCodeValue());
-        verify(productoService).eliminar(1L);
+        mockMvc.perform(delete("/productos/1"))
+                .andExpect(status().isNoContent());
     }
 
     // ---------------------------------------------------------
-    // DESCONTAR STOCK
+    // DESCONTAR STOCK → 200
     // ---------------------------------------------------------
     @Test
-    void descontarStock_debeDescontarCantidad() {
-        doNothing().when(productoService).descontarStock(1L, 5);
+    void descontarStock_ok_200() throws Exception {
 
-        ResponseEntity<Void> response = productoController.descontarStock(1L, 5);
+        doNothing().when(productoService).descontarStock(1L, 2);
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(productoService).descontarStock(1L, 5);
+        mockMvc.perform(post("/productos/1/descontar")
+                        .param("cantidad", "2"))
+                .andExpect(status().isOk());
     }
 }

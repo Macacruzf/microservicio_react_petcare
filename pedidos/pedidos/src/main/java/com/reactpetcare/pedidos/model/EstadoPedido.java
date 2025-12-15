@@ -1,8 +1,22 @@
 package com.reactpetcare.pedidos.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(
+    description = "Estado del pedido dentro del flujo de compra",
+    example = "PENDIENTE"
+)
 public enum EstadoPedido {
-    PENDIENTE,      // El pedido se creó (aún no está listo)
-    POR_ENTREGAR,   // La tienda preparó el pedido
-    ENTREGADO,      // El usuario retiró su compra
-    CANCELADO       // (Opcional) Pedido anulado
+
+    @Schema(description = "Pedido creado, aún no preparado ni entregado")
+    PENDIENTE,
+
+    @Schema(description = "Pedido preparado por la tienda y listo para entrega")
+    POR_ENTREGAR,
+
+    @Schema(description = "Pedido entregado al usuario")
+    ENTREGADO,
+
+    @Schema(description = "Pedido cancelado antes de la entrega")
+    CANCELADO
 }

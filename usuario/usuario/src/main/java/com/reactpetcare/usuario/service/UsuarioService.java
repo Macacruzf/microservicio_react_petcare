@@ -2,6 +2,7 @@ package com.reactpetcare.usuario.service;
 
 import com.reactpetcare.usuario.dto.UsuarioDto;
 import com.reactpetcare.usuario.dto.RegistroRequest;
+import com.reactpetcare.usuario.dto.CambiarPasswordRequest;
 import com.reactpetcare.usuario.dto.LoginRequest;
 import com.reactpetcare.usuario.dto.LoginResponse;
 import com.reactpetcare.usuario.model.RolNombre;
@@ -181,4 +182,36 @@ public class UsuarioService {
         dto.setRol(usuario.getRoles().stream().findFirst().map(r -> r.getNombre().name()).orElse("CLIENTE"));
         return dto;
     }
+
+    // ---------------------------------------------------------
+    //  CAMBIAR CONTRASEÑA (USUARIO AUTENTICADO)
+    // ---------------------------------------------------------
+    public void cambiarPassword(String authHeader, CambiarPasswordRequest request) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Token no proporcionado");
+        }
+
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtUtil.obtenerUsuario(token); // 👈 MÉTODO CORRECTO
+
+        Usuario usuario = usuarioRepositorio.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Validar contraseña actual
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Validar nueva contraseña
+        if (request.getPasswordNueva().length() < 4) {
+            throw new RuntimeException("La nueva contraseña es demasiado corta");
+        }
+
+        // Guardar nueva contraseña encriptada
+        usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepositorio.save(usuario);
+    }
+
+    
 }

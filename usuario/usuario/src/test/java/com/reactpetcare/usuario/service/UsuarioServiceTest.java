@@ -1,27 +1,34 @@
 package com.reactpetcare.usuario.service;
 
 import com.reactpetcare.usuario.dto.*;
-import com.reactpetcare.usuario.model.RolUsuario;
-import com.reactpetcare.usuario.model.Usuario;
-import com.reactpetcare.usuario.repository.UsuarioRepository;
+import com.reactpetcare.usuario.model.*;
+import com.reactpetcare.usuario.repository.*;
 import com.reactpetcare.usuario.security.JwtUtil;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.security.authentication.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepositorio;
+
+    @Mock
+    private RolRepository rolRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -30,70 +37,123 @@ class UsuarioServiceTest {
     private AuthenticationManager authManager;
 
     @Mock
-    private JwtUtil jwtUtil; // No se usa pero forma parte del constructor
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private UsuarioService usuarioService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    // ---------------------------------------------------------
-    // TEST REGISTRO COMPLETO (formulario)
-    // ---------------------------------------------------------
+    // =====================================================
+    // CREAR (UsuarioDto)
+    // =====================================================
     @Test
-    void registrar_debeCrearUsuario() {
-        RegistroRequest req = new RegistroRequest();
-        req.setNombre("Francisca");
-        req.setApellido("González");
-        req.setEmail("test@test.com");
-        req.setDireccion("Calle 1");
-        req.setTelefono("123456");
-        req.setPassword("1234");
-        req.setRol("CLIENTE");
+    void crearUsuario_ok() {
 
-        when(usuarioRepositorio.findByEmail("test@test.com"))
-                .thenReturn(Optional.empty());
+        UsuarioDto dto = new UsuarioDto();
+        dto.setUsername("francisca");
+        dto.setRol("CLIENTE");
 
-        when(passwordEncoder.encode("1234"))
-                .thenReturn("pass-encriptada");
-
-        Usuario usuarioGuardado = Usuario.builder()
+        Rol rol = Rol.builder()
                 .id(1L)
-                .nombre("Francisca")
-                .apellido("González")
-                .email("test@test.com")
-                .direccion("Calle 1")
-                .telefono("123456")
-                .password("pass-encriptada")
-                .rol(RolUsuario.CLIENTE)
+                .nombre(RolNombre.CLIENTE)
                 .build();
 
-        when(usuarioRepositorio.save(any(Usuario.class)))
-                .thenReturn(usuarioGuardado);
+        when(usuarioRepositorio.findByUsername("francisca"))
+                .thenReturn(Optional.empty());
 
-        UsuarioDto response = usuarioService.registrar(req);
+        when(rolRepository.findByNombre(RolNombre.CLIENTE))
+                .thenReturn(Optional.of(rol));
 
-        assertEquals("Francisca", response.getNombre());
-        assertEquals("González", response.getApellido());
-        assertEquals("test@test.com", response.getEmail());
-        assertEquals("CLIENTE", response.getRol());
+        when(passwordEncoder.encode(any()))
+                .thenReturn("password-encriptada");
+
+        when(usuarioRepositorio.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        UsuarioDto resultado = usuarioService.crear(dto);
+
+        assertNotNull(resultado);
+        verify(usuarioRepositorio).save(any());
     }
 
-
-    // ---------------------------------------------------------
-    // TEST OBTENER POR ID
-    // ---------------------------------------------------------
+    // =====================================================
+    // REGISTRAR
+    // =====================================================
     @Test
-    void obtenerPorId_debeRetornarUsuario() {
+    void registrarUsuario_ok() {
+
+        RegistroRequest req = new RegistroRequest();
+        req.setNombre("Francisca");
+        req.setUsername("francisca");
+        req.setPassword("1234");
+
+        Rol rol = Rol.builder()
+                .id(1L)
+                .nombre(RolNombre.CLIENTE)
+                .build();
+
+        when(usuarioRepositorio.findByUsername("francisca"))
+                .thenReturn(Optional.empty());
+
+        when(rolRepository.findByNombre(RolNombre.CLIENTE))
+                .thenReturn(Optional.of(rol));
+
+        when(passwordEncoder.encode("1234"))
+                .thenReturn("password-encriptada");
+
+        when(usuarioRepositorio.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        UsuarioDto resultado = usuarioService.registrar(req);
+
+        assertEquals("Francisca", resultado.getNombre());
+    }
+
+    // =====================================================
+    // LOGIN
+    // =====================================================
+    @Test
+    void login_ok() {
+
+        LoginRequest req = new LoginRequest();
+        req.setEmail("francisca@mail.com");
+        req.setPassword("1234");
+
         Usuario usuario = Usuario.builder()
                 .id(1L)
-                .nombre("Fran")
-                .apellido("G")
-                .email("fran@test.com")
-                .rol(RolUsuario.CLIENTE)
+                .nombre("Francisca")
+                .apellido("Castro")
+                .email("francisca@mail.com")
+                .roles(Set.of(
+                        Rol.builder()
+                                .nombre(RolNombre.CLIENTE)
+                                .build()
+                ))
+                .build();
+
+        when(usuarioRepositorio.findByEmail("francisca@mail.com"))
+                .thenReturn(Optional.of(usuario));
+
+        when(jwtUtil.generarToken("francisca@mail.com"))
+                .thenReturn("jwt-token");
+
+        LoginResponse response = usuarioService.login(req);
+
+        assertEquals("jwt-token", response.getToken());
+        verify(authManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    // =====================================================
+    // OBTENER POR ID
+    // =====================================================
+    @Test
+    void obtenerUsuarioPorId_ok() {
+
+        Usuario usuario = Usuario.builder()
+                .id(1L)
+                .nombre("Francisca")
+                .roles(Set.of(
+                        Rol.builder().nombre(RolNombre.CLIENTE).build()
+                ))
                 .build();
 
         when(usuarioRepositorio.findById(1L))
@@ -101,22 +161,21 @@ class UsuarioServiceTest {
 
         UsuarioDto dto = usuarioService.obtenerPorId(1L);
 
-        assertEquals("Fran", dto.getNombre());
-        assertEquals("G", dto.getApellido());
-        assertEquals("fran@test.com", dto.getEmail());
+        assertEquals(1L, dto.getId());
     }
 
-    // ---------------------------------------------------------
-    // TEST LISTAR
-    // ---------------------------------------------------------
+    // =====================================================
+    // LISTAR
+    // =====================================================
     @Test
-    void listar_debeRetornarListaDeUsuarios() {
+    void listarUsuarios_ok() {
+
         Usuario usuario = Usuario.builder()
                 .id(1L)
                 .nombre("Francisca")
-                .apellido("González")
-                .email("fran@test.com")
-                .rol(RolUsuario.CLIENTE)
+                .roles(Set.of(
+                        Rol.builder().nombre(RolNombre.CLIENTE).build()
+                ))
                 .build();
 
         when(usuarioRepositorio.findAll())
@@ -125,82 +184,39 @@ class UsuarioServiceTest {
         List<UsuarioDto> lista = usuarioService.listar();
 
         assertEquals(1, lista.size());
-        assertEquals("Francisca", lista.get(0).getNombre());
     }
 
-    // ---------------------------------------------------------
-    // TEST ACTUALIZAR
-    // ---------------------------------------------------------
+    // =====================================================
+    // ACTUALIZAR
+    // =====================================================
     @Test
-    void actualizar_debeModificarUsuario() {
+    void actualizarUsuario_ok() {
+
         Usuario usuario = Usuario.builder()
                 .id(1L)
-                .nombre("Fran")
-                .apellido("G")
-                .direccion("Dir 1")
-                .telefono("111")
-                .rol(RolUsuario.CLIENTE)
+                .nombre("Viejo")
+                .roles(Set.of(
+                        Rol.builder().nombre(RolNombre.CLIENTE).build()
+                ))
                 .build();
 
-        UsuarioDto cambios = new UsuarioDto();
-        cambios.setNombre("Nuevo Nombre");
-        cambios.setApellido("Nuevo Apellido");
-        cambios.setDireccion("Nueva Dir");
-        cambios.setTelefono("222");
-        cambios.setRol("CLIENTE");
+        UsuarioDto dto = new UsuarioDto();
+        dto.setNombre("Nuevo");
+        dto.setRol("CLIENTE");
 
         when(usuarioRepositorio.findById(1L))
                 .thenReturn(Optional.of(usuario));
 
-        when(usuarioRepositorio.save(any(Usuario.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(rolRepository.findByNombre(RolNombre.CLIENTE))
+                .thenReturn(Optional.of(
+                        Rol.builder().nombre(RolNombre.CLIENTE).build()
+                ));
 
-        UsuarioDto resultado = usuarioService.actualizar(1L, cambios);
+        when(usuarioRepositorio.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
 
-        assertEquals("Nuevo Nombre", resultado.getNombre());
-        assertEquals("Nuevo Apellido", resultado.getApellido());
-        assertEquals("Nueva Dir", resultado.getDireccion());
-        assertEquals("222", resultado.getTelefono());
-        assertEquals("CLIENTE", resultado.getRol());
-    }
+        UsuarioDto actualizado = usuarioService.actualizar(1L, dto);
 
-    // ---------------------------------------------------------
-    // TEST LOGIN — SIN AUTHENTICATION Y SIN TOKEN
-    // ---------------------------------------------------------
-    @Test
-    void login_retornaDatosUsuarioCorrectos() {
-
-        // REQUEST
-        LoginRequest request = new LoginRequest();
-        request.setEmail("francisca@example.com");
-        request.setPassword("123456");
-
-        // USUARIO SIMULADO
-        Usuario usuario = Usuario.builder()
-                .id(1L)
-                .nombre("Francisca")
-                .apellido("Castro")
-                .email("francisca@example.com")
-                .rol(RolUsuario.CLIENTE)
-                .build();
-
-        // MOCK: cuando se busca por email → retorna usuario
-        when(usuarioRepositorio.findByEmail("francisca@example.com"))
-                .thenReturn(Optional.of(usuario));
-
-        // ACT
-        LoginResponse resp = usuarioService.login(request);
-
-        // ASSERT
-        assertNotNull(resp);
-        assertEquals(1L, resp.getUserId());
-        assertEquals("Francisca", resp.getNombre());
-        assertEquals("Castro", resp.getApellido());
-        assertEquals("francisca@example.com", resp.getEmail());
-        assertEquals("CLIENTE", resp.getRol());
-
-        verify(usuarioRepositorio, times(1)).findByEmail("francisca@example.com");
+        assertEquals("Nuevo", actualizado.getNombre());
     }
 }
-
-

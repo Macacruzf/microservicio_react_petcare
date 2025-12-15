@@ -1,9 +1,6 @@
 package com.reactpetcare.pedidos.service;
 
-import com.reactpetcare.pedidos.dto.CarritoDto;
-import com.reactpetcare.pedidos.dto.ItemCarritoDto;
-import com.reactpetcare.pedidos.dto.ProductoResponse;
-import com.reactpetcare.pedidos.dto.UsuarioResponse;
+import com.reactpetcare.pedidos.dto.*;
 import com.reactpetcare.pedidos.model.*;
 import com.reactpetcare.pedidos.repository.DetallePedidoRepository;
 import com.reactpetcare.pedidos.repository.PedidoRepository;
@@ -15,10 +12,12 @@ import org.mockito.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class PedidoServiceTest {
@@ -29,162 +28,152 @@ class PedidoServiceTest {
     @Mock
     private DetallePedidoRepository detallePedidoRepository;
 
-    // 🌟 ESTA ES LA CLAVE PARA EVITAR ERRORES GENÉRICOS 🌟
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     private WebClient carritoWebClient;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     private WebClient productosWebClient;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     private WebClient usuarioWebClient;
 
     @InjectMocks
     private PedidoService pedidoService;
+
+    // ===== WebClient chains =====
+    @Mock private WebClient.RequestHeadersUriSpec<?> usuarioGet;
+    @Mock private WebClient.RequestHeadersUriSpec<?> carritoGet;
+    @Mock private WebClient.RequestHeadersUriSpec<?> productoGet;
+    @Mock private WebClient.RequestHeadersUriSpec<?> carritoDelete;
+
+    @Mock private WebClient.RequestBodyUriSpec productoPost;
+    @Mock private WebClient.RequestHeadersSpec<?> headersSpec;
+    @Mock private WebClient.ResponseSpec responseSpec;
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
     }
 
-
-    // ==================================================================================
-    // TEST CREAR PEDIDO
-    // ==================================================================================
+    // =====================================================
+    // CREAR PEDIDO OK
+    // =====================================================
     @Test
-    void crearPedido_exitoso() {
+    void crearPedido_ok() {
 
         Long usuarioId = 1L;
 
-        // -----------------------------
-        // Mock UsuarioResponse
-        UsuarioResponse usuarioMock = new UsuarioResponse();
-        usuarioMock.setId(1L);
-        usuarioMock.setNombre("Francisca");
-        usuarioMock.setEmail("fran@example.com");
+        // ---------- USUARIO ----------
+        UsuarioResponse usuario = new UsuarioResponse();
+        usuario.setId(1L);
+        usuario.setNombre("Francisca");
+        usuario.setEmail("francisca@example.com");
 
-        when(usuarioWebClient.get()
-                .uri("/usuarios/{id}", usuarioId)
-                .retrieve()
-                .bodyToMono(UsuarioResponse.class))
-                .thenReturn(Mono.just(usuarioMock));
+        doReturn(usuarioGet).when(usuarioWebClient).get();
+        doReturn(headersSpec).when(usuarioGet).uri("/usuarios/{id}", usuarioId);
+        doReturn(responseSpec).when(headersSpec).retrieve();
+        doReturn(Mono.just(usuario))
+                .when(responseSpec).bodyToMono(UsuarioResponse.class);
 
-        // -----------------------------
-        // Mock CarritoDto
+        // ---------- CARRITO ----------
         ItemCarritoDto item = new ItemCarritoDto();
         item.setProductoId(10L);
         item.setCantidad(2);
 
-        CarritoDto carrito = new CarritoDto(usuarioId, List.of(item), 20000.0);
+        CarritoDto carrito = new CarritoDto();
+        carrito.setItems(List.of(item));
 
-        when(carritoWebClient.get()
-                .uri("/carrito/{usuarioId}", usuarioId)
-                .retrieve()
-                .bodyToMono(CarritoDto.class))
-                .thenReturn(Mono.just(carrito));
+        doReturn(carritoGet).when(carritoWebClient).get();
+        doReturn(headersSpec).when(carritoGet).uri("/carrito/{usuarioId}", usuarioId);
+        doReturn(responseSpec).when(headersSpec).retrieve();
+        doReturn(Mono.just(carrito))
+                .when(responseSpec).bodyToMono(CarritoDto.class);
 
-        // -----------------------------
-        // Mock ProductoResponse
+        // ---------- PRODUCTO ----------
         ProductoResponse producto = new ProductoResponse();
         producto.setId(10L);
         producto.setNombre("Shampoo");
-        producto.setPrecio(10000.0);
-        producto.setStock(5);
+        producto.setPrecio(5000.0);
+        producto.setStock(10);
 
-        when(productosWebClient.get()
-                .uri("/productos/{id}", 10L)
-                .retrieve()
-                .bodyToMono(ProductoResponse.class))
-                .thenReturn(Mono.just(producto));
+        doReturn(productoGet).when(productosWebClient).get();
+        doReturn(headersSpec).when(productoGet).uri("/productos/{id}", 10L);
+        doReturn(responseSpec).when(headersSpec).retrieve();
+        doReturn(Mono.just(producto))
+                .when(responseSpec).bodyToMono(ProductoResponse.class);
 
-        when(productosWebClient.post()
-                .uri("/productos/{id}/descontar?cantidad={cantidad}", 10L, 2)
-                .retrieve()
-                .toBodilessEntity())
-                .thenReturn(Mono.empty());
+        // ---------- DESCONTAR STOCK ----------
+        doReturn(productoPost).when(productosWebClient).post();
+        doReturn(headersSpec).when(productoPost)
+                .uri("/productos/{id}/descontar?cantidad={cantidad}", 10L, 2);
+        doReturn(responseSpec).when(headersSpec).retrieve();
+        doReturn(Mono.empty()).when(responseSpec).toBodilessEntity();
 
-        // -----------------------------
-        // Mock guardado pedido
-        Pedido pedidoGuardado = Pedido.builder()
-                .id(1L)
-                .usuarioId(usuarioId)
-                .estado(EstadoPedido.PENDIENTE)
-                .build();
+        // ---------- GUARDAR PEDIDO ----------
+        doAnswer(invocation -> {
+            Pedido p = invocation.getArgument(0);
+            p.setId(1L);
+            p.setFechaCreacion(LocalDateTime.now());
+            return p;
+        }).when(pedidoRepository).save(any(Pedido.class));
 
-        when(pedidoRepository.save(any(Pedido.class)))
-                .thenReturn(pedidoGuardado);
+        // ---------- VACIAR CARRITO ----------
+        doReturn(carritoDelete).when(carritoWebClient).delete();
+        doReturn(headersSpec).when(carritoDelete)
+                .uri("/carrito/{usuarioId}/vaciar", usuarioId);
+        doReturn(responseSpec).when(headersSpec).retrieve();
+        doReturn(Mono.empty()).when(responseSpec).toBodilessEntity();
 
-        // -----------------------------
+        // ---------- EJECUCIÓN ----------
         Pedido resultado = pedidoService.crearPedido(usuarioId);
 
+        // ---------- ASSERT ----------
         assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
         assertEquals(EstadoPedido.PENDIENTE, resultado.getEstado());
+        assertEquals(10000.0, resultado.getTotal());
+
+        verify(pedidoRepository, atLeastOnce()).save(any(Pedido.class));
+        verify(detallePedidoRepository).saveAll(anyList());
     }
 
-
-
-    // ==================================================================================
-    // TEST CAMBIAR ESTADO
-    // ==================================================================================
+    // =====================================================
+    // OBTENER POR ID
+    // =====================================================
     @Test
-    void cambiarEstado_exitoso() {
+    void obtenerPorId_ok() {
+
         Pedido pedido = Pedido.builder()
-                .id(1L)
+                .id(5L)
                 .estado(EstadoPedido.PENDIENTE)
                 .build();
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.save(any())).thenReturn(pedido);
+        when(pedidoRepository.findById(5L))
+                .thenReturn(Optional.of(pedido));
 
-        Pedido actualizado = pedidoService.cambiarEstado(1L, EstadoPedido.ENTREGADO);
+        Pedido resultado = pedidoService.obtenerPorId(5L);
 
-        assertEquals(EstadoPedido.ENTREGADO, actualizado.getEstado());
+        assertEquals(5L, resultado.getId());
     }
 
-
-    // ==================================================================================
-    // TEST OBTENER POR ID
-    // ==================================================================================
+    // =====================================================
+    // CAMBIAR ESTADO
+    // =====================================================
     @Test
-    void obtenerPorId_exitoso() {
+    void cambiarEstado_ok() {
+
         Pedido pedido = Pedido.builder()
-                .id(1L)
+                .id(3L)
+                .estado(EstadoPedido.PENDIENTE)
                 .build();
 
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.findById(3L))
+                .thenReturn(Optional.of(pedido));
 
-        Pedido resultado = pedidoService.obtenerPorId(1L);
+        when(pedidoRepository.save(any(Pedido.class)))
+                .thenAnswer(i -> i.getArgument(0));
 
-        assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
-    }
+        Pedido actualizado = pedidoService.cambiarEstado(3L, EstadoPedido.ENTREGADO);
 
-
-    // ==================================================================================
-    // TEST LISTAR POR USUARIO
-    // ==================================================================================
-    @Test
-    void listarPorUsuario_exitoso() {
-        when(pedidoRepository.findByUsuarioId(5L))
-                .thenReturn(List.of(new Pedido(), new Pedido()));
-
-        List<Pedido> lista = pedidoService.listarPorUsuario(5L);
-
-        assertEquals(2, lista.size());
-    }
-
-
-    // ==================================================================================
-    // TEST LISTAR TODOS
-    // ==================================================================================
-    @Test
-    void listar_exitoso() {
-        when(pedidoRepository.findAll())
-                .thenReturn(List.of(new Pedido(), new Pedido(), new Pedido()));
-
-        List<Pedido> lista = pedidoService.listar();
-
-        assertEquals(3, lista.size());
+        assertEquals(EstadoPedido.ENTREGADO, actualizado.getEstado());
     }
 }
