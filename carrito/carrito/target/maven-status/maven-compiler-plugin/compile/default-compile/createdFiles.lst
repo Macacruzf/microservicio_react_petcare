@@ -1,0 +1,17 @@
+com\reactpetcare\carrito\dto\ProductoResponse.class
+com\reactpetcare\carrito\service\CarritoService.class
+com\reactpetcare\carrito\model\Carrito$CarritoBuilder.class
+com\reactpetcare\carrito\dto\CarritoDto$CarritoDtoBuilder.class
+com\reactpetcare\carrito\webclient\CarritoConfig.class
+com\reactpetcare\carrito\config\OpenApiConfig.class
+com\reactpetcare\carrito\repository\CarritoRepository.class
+com\reactpetcare\carrito\model\CarritoItem$CarritoItemBuilder.class
+com\reactpetcare\carrito\dto\CarritoItemDto$CarritoItemDtoBuilder.class
+com\reactpetcare\carrito\controller\CarritoController.class
+com\reactpetcare\carrito\CarritoApplication.class
+com\reactpetcare\carrito\dto\CarritoDto.class
+com\reactpetcare\carrito\dto\CarritoItemDto.class
+com\reactpetcare\carrito\repository\CarritoItemRepository.class
+com\reactpetcare\carrito\config\CorsConfig.class
+com\reactpetcare\carrito\model\CarritoItem.class
+com\reactpetcare\carrito\model\Carrito.class

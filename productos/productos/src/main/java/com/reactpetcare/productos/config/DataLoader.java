@@ -47,7 +47,7 @@ public class DataLoader implements CommandLineRunner {
         guardarOActualizar(productosExistentes, "Collar tropical para perro", 4990.0, "Collar resistente con estampado tropical.", accesorios, 10, "images/collar.jpg");
         guardarOActualizar(productosExistentes, "Alimento para gato Pro Plan", 18990.0, "Nutrición completa con prebióticos naturales.", alimentos, 10, "images/alimento_gato.jpg");
         guardarOActualizar(productosExistentes, "Correa retráctil automática", 3990.0, "Correa extensible hasta 3 metros.", accesorios, 12, "images/correa.jpg");
-        guardarOActualizar(productosExistentes, "Juguetes dentales para perro (pack x4)", 7990.0, "Pack de juguetes de goma con texturas.", juguetes, 14, "images/juguetes.jpg");
+        guardarOActualizar(productosExistentes, "Juguetes dentales para perro (pack x4)", 7990.0, "Pack de juguetes de goma con texturas.", juguetes, 14, "images/juguete.jpg");
         guardarOActualizar(productosExistentes, "Plato doble elevado para mascota", 8990.0, "Plato doble de cerámica con base de madera.", accesorios, 9, "images/plato.jpg");
         guardarOActualizar(productosExistentes, "Shampoo para perros con ceramidas", 6490.0, "Shampoo hipoalergénico para brillo y suavidad.", higiene, 10, "images/shampo.jpg");
 

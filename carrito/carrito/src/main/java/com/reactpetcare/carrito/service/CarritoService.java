@@ -99,14 +99,17 @@ public class CarritoService {
     // ────────────────────────────────────────────────────────────────
     /** Vaciar carrito del usuario */
     public void vaciarCarrito(Long usuarioId) {
-        Carrito carrito = carritoRepository.findByUsuarioId(usuarioId)
-                .orElseGet(() -> carritoRepository.save(
-                        Carrito.builder()
-                                .usuarioId(usuarioId)
-                                .build()
-                ));
-
-        carrito.getItems().clear();
-        carritoRepository.save(carrito);
+        Optional<Carrito> carritoOpt = carritoRepository.findByUsuarioId(usuarioId);
+        
+        if (carritoOpt.isPresent()) {
+            Carrito carrito = carritoOpt.get();
+            // Eliminar todos los items (orphanRemoval se encargará de borrarlos de BD)
+            carrito.getItems().clear();
+            carritoRepository.save(carrito);
+            System.out.println("🗑️ Carrito vaciado para usuario: " + usuarioId);
+        } else {
+            // Si no existe carrito, no hay nada que vaciar
+            System.out.println("ℹ️ No existe carrito para usuario: " + usuarioId);
+        }
     }
 }

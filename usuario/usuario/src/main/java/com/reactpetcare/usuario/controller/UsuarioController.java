@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.RequiredArgsConstructor;
@@ -30,28 +29,14 @@ public class UsuarioController {
     // REGISTRO
     // ---------------------------------------------------------
     @Operation(
-        summary = "Registrar un nuevo usuario",
-        description = "Crea un usuario con rol CLIENTE por defecto y devuelve sus datos."
+            summary = "Registrar un nuevo usuario",
+            description = "Crea un usuario con rol CLIENTE por defecto. "
+                        + "Devuelve datos del usuario recién creado.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Usuario registrado",
+                            content = @Content(schema = @Schema(implementation = UsuarioDto.class))),
+            }
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Usuario registrado correctamente",
-            content = @Content(schema = @Schema(implementation = UsuarioDto.class))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Datos de registro inválidos"
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "El usuario ya existe"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
     @PostMapping("/registro")
     public ResponseEntity<UsuarioDto> registrar(@RequestBody RegistroRequest request) {
         return ResponseEntity.ok(usuarioService.registrar(request));
@@ -61,120 +46,54 @@ public class UsuarioController {
     // LOGIN
     // ---------------------------------------------------------
     @Operation(
-        summary = "Iniciar sesión",
-        description = "Valida credenciales y devuelve un token JWT."
+            summary = "Iniciar sesión",
+            description = "Valida credenciales y devuelve un token JWT para autenticación.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Login exitoso",
+                            content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+                    @ApiResponse(responseCode = "401", description = "Credenciales incorrectas")
+            }
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Login exitoso",
-            content = @Content(schema = @Schema(implementation = LoginResponse.class))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Datos de login inválidos"
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Credenciales incorrectas"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(usuarioService.login(request));
     }
 
     // ---------------------------------------------------------
-    // OBTENER USUARIO POR ID
+    // OBTENER POR ID
     // ---------------------------------------------------------
     @Operation(
-        summary = "Obtener usuario por ID",
-        description = "Obtiene los datos de un usuario específico."
+            summary = "Obtener usuario por ID",
+            description = "Devuelve datos del usuario."
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Usuario encontrado",
-            content = @Content(schema = @Schema(implementation = UsuarioDto.class))
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioDto> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
     // ---------------------------------------------------------
-    // LISTAR TODOS LOS USUARIOS
+    // LISTAR TODOS
     // ---------------------------------------------------------
     @Operation(
-        summary = "Listar usuarios",
-        description = "Obtiene la lista completa de usuarios."
+            summary = "Listar todos los usuarios",
+            description = "Devuelve la lista completa de usuarios.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(mediaType = "application/json"))
+            }
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Usuarios listados correctamente",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = UsuarioDto.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "204",
-            description = "No existen usuarios registrados"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
     @GetMapping
     public ResponseEntity<List<UsuarioDto>> listar() {
-        List<UsuarioDto> usuarios = usuarioService.listar();
-        if (usuarios.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(usuarios);
+        return ResponseEntity.ok(usuarioService.listar());
     }
 
     // ---------------------------------------------------------
     // ACTUALIZAR USUARIO
     // ---------------------------------------------------------
     @Operation(
-        summary = "Actualizar usuario",
-        description = "Actualiza los datos de un usuario existente."
+            summary = "Actualizar usuario",
+            description = "Edita datos del usuario."
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Usuario actualizado correctamente",
-            content = @Content(schema = @Schema(implementation = UsuarioDto.class))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Datos inválidos"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDto> actualizar(
             @PathVariable Long id,
@@ -183,13 +102,19 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
 
-    @PutMapping("/cambiar-password")
-    public ResponseEntity<String> cambiarPassword(
-         @RequestBody CambiarPasswordRequest request,
-         @RequestHeader("Authorization") String authHeader
-     ) {
-        usuarioService.cambiarPassword(authHeader, request);
-        return ResponseEntity.ok("Contraseña actualizada correctamente");
-        }
-
+    // ---------------------------------------------------------
+    // CAMBIAR CONTRASEÑA
+    // ---------------------------------------------------------
+    @Operation(
+            summary = "Cambiar contraseña de usuario",
+            description = "Permite al usuario cambiar su contraseña validando la contraseña actual."
+    )
+    @PutMapping("/{id}/cambiar-password")
+    public ResponseEntity<Void> cambiarPassword(
+            @PathVariable Long id,
+            @RequestBody CambiarPasswordRequest request
+    ) {
+        usuarioService.cambiarPassword(id, request);
+        return ResponseEntity.ok().build();
+    }
 }

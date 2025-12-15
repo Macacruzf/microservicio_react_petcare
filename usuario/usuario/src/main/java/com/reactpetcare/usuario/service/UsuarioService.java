@@ -18,6 +18,7 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.List;
@@ -164,6 +165,28 @@ public class UsuarioService {
         usuarioRepositorio.save(usuario);
 
         return mapToDto(usuario);
+    }
+
+    // ---------------------------------------------------------
+    //  CAMBIAR CONTRASEÑA
+    // ---------------------------------------------------------
+    @Transactional
+    public void cambiarPassword(Long id, com.reactpetcare.usuario.dto.CambiarPasswordRequest request) {
+        
+        Usuario usuario = usuarioRepositorio.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Verificar que la contraseña actual sea correcta
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Actualizar con la nueva contraseña encriptada
+        usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepositorio.saveAndFlush(usuario);
+        
+        System.out.println("✅ Contraseña actualizada para usuario ID: " + id);
+        System.out.println("✅ Nueva contraseña encriptada: " + usuario.getPassword().substring(0, 20) + "...");
     }
 
     // ---------------------------------------------------------
