@@ -109,12 +109,12 @@ public class UsuarioController {
             summary = "Cambiar contraseña de usuario",
             description = "Permite al usuario cambiar su contraseña validando la contraseña actual."
     )
-    @PutMapping("/{id}/cambiar-password")
+    @PutMapping("/cambiar-password")
     public ResponseEntity<Void> cambiarPassword(
-            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody CambiarPasswordRequest request
     ) {
-        usuarioService.cambiarPassword(id, request);
+        usuarioService.cambiarPassword(authHeader, request);
         return ResponseEntity.ok().build();
     }
 }

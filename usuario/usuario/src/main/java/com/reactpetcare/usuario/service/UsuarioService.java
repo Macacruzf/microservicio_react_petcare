@@ -216,7 +216,7 @@ public class UsuarioService {
         }
 
         String token = authHeader.replace("Bearer ", "");
-        String email = jwtUtil.obtenerUsuario(token); // 👈 MÉTODO CORRECTO
+        String email = jwtUtil.obtenerUsuario(token); // MÉTODO CORRECTO
 
         Usuario usuario = usuarioRepositorio.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
