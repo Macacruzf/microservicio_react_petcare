@@ -77,6 +77,11 @@ public class UsuarioService {
             throw new RuntimeException("El nombre de usuario ya está ocupado");
         }
 
+        // Validar que el email no esté registrado
+        if (usuarioRepositorio.findByEmail(req.getEmail()).isPresent()) {
+            throw new RuntimeException("El correo electrónico ya está registrado");
+        }
+
         Rol rol = rolRepository.findByNombre(RolNombre.CLIENTE)
                 .orElseThrow(() -> new RuntimeException("Error al asignar rol por defecto"));
 
@@ -94,7 +99,7 @@ public class UsuarioService {
         try {
             usuarioRepositorio.save(usuario);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new RuntimeException("El correo electrónico ya está registrado");
         }
 
         return mapToDto(usuario);
