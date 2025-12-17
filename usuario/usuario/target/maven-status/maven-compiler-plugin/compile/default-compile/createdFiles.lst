@@ -20,5 +20,6 @@ com\reactpetcare\usuario\model\RolNombre.class
 com\reactpetcare\usuario\dto\LoginRequest.class
 com\reactpetcare\usuario\config\DataLoader.class
 com\reactpetcare\usuario\dto\LoginResponse.class
+com\reactpetcare\usuario\exception\GlobalExceptionHandler.class
 com\reactpetcare\usuario\dto\UsuarioDto.class
 com\reactpetcare\usuario\config\OpenApiConfig.class
