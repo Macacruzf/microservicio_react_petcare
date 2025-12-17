@@ -20,7 +20,10 @@ import java.util.List;
 @RequestMapping("/usuarios")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
-@Tag(name = "Usuarios", description = "API de gestión interna de usuarios con autenticación JWT")
+@Tag(
+    name = "Usuarios",
+    description = "API de gestión interna de usuarios con autenticación JWT"
+)
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -29,16 +32,25 @@ public class UsuarioController {
     // REGISTRO
     // ---------------------------------------------------------
     @Operation(
-            summary = "Registrar un nuevo usuario",
-            description = "Crea un usuario con rol CLIENTE por defecto. "
-                        + "Devuelve datos del usuario recién creado.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Usuario registrado",
-                            content = @Content(schema = @Schema(implementation = UsuarioDto.class))),
-            }
+        summary = "Registrar un nuevo usuario",
+        description = "Crea un usuario con rol CLIENTE por defecto y devuelve sus datos."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Usuario registrado correctamente",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = UsuarioDto.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "400",
+        description = "Datos de registro inválidos"
     )
     @PostMapping("/registro")
-    public ResponseEntity<UsuarioDto> registrar(@RequestBody RegistroRequest request) {
+    public ResponseEntity<UsuarioDto> registrar(
+            @RequestBody RegistroRequest request
+    ) {
         return ResponseEntity.ok(usuarioService.registrar(request));
     }
 
@@ -46,16 +58,25 @@ public class UsuarioController {
     // LOGIN
     // ---------------------------------------------------------
     @Operation(
-            summary = "Iniciar sesión",
-            description = "Valida credenciales y devuelve un token JWT para autenticación.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Login exitoso",
-                            content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-                    @ApiResponse(responseCode = "401", description = "Credenciales incorrectas")
-            }
+        summary = "Iniciar sesión",
+        description = "Valida credenciales y devuelve un token JWT."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Login exitoso",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = LoginResponse.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "401",
+        description = "Credenciales incorrectas"
     )
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest request
+    ) {
         return ResponseEntity.ok(usuarioService.login(request));
     }
 
@@ -63,8 +84,20 @@ public class UsuarioController {
     // OBTENER POR ID
     // ---------------------------------------------------------
     @Operation(
-            summary = "Obtener usuario por ID",
-            description = "Devuelve datos del usuario."
+        summary = "Obtener usuario por ID",
+        description = "Devuelve los datos del usuario asociado al ID."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Usuario encontrado",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = UsuarioDto.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "Usuario no encontrado"
     )
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioDto> obtenerPorId(@PathVariable Long id) {
@@ -75,12 +108,16 @@ public class UsuarioController {
     // LISTAR TODOS
     // ---------------------------------------------------------
     @Operation(
-            summary = "Listar todos los usuarios",
-            description = "Devuelve la lista completa de usuarios.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "OK",
-                            content = @Content(mediaType = "application/json"))
-            }
+        summary = "Listar todos los usuarios",
+        description = "Devuelve la lista completa de usuarios registrados."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Listado obtenido correctamente",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = UsuarioDto.class)
+        )
     )
     @GetMapping
     public ResponseEntity<List<UsuarioDto>> listar() {
@@ -91,8 +128,20 @@ public class UsuarioController {
     // ACTUALIZAR USUARIO
     // ---------------------------------------------------------
     @Operation(
-            summary = "Actualizar usuario",
-            description = "Edita datos del usuario."
+        summary = "Actualizar usuario",
+        description = "Permite editar los datos del usuario."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Usuario actualizado",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = UsuarioDto.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "Usuario no encontrado"
     )
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDto> actualizar(
@@ -106,8 +155,16 @@ public class UsuarioController {
     // CAMBIAR CONTRASEÑA
     // ---------------------------------------------------------
     @Operation(
-            summary = "Cambiar contraseña de usuario",
-            description = "Permite al usuario cambiar su contraseña validando la contraseña actual."
+        summary = "Cambiar contraseña",
+        description = "Permite al usuario cambiar su contraseña usando JWT."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Contraseña actualizada correctamente"
+    )
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token inválido o contraseña incorrecta"
     )
     @PutMapping("/cambiar-password")
     public ResponseEntity<Void> cambiarPassword(
